@@ -1,10 +1,6 @@
-*! Current version 0.0.3 Global D4G (16-Apr-2018)
-*! Based on upload command
-*! Joao Pedro Azevedo (World Bank Group - Poverty and Equity Global Practice)
-*! Raul Andres Castaneda (World Bank Group - Poverty and Equity Global Practice)
-*! Paul Corral        (World Bank Group - Poverty and Equity Global Practice)
-*! Minh Cong Nguyen   (World Bank Group - Poverty and Equity Global Practice)
-*!	Fix bugs. 
+*! primus_upload.ado
+*! Joao Pedro Azevedo, Raul Andres Castaneda, Paul Corral, Minh Cong Nguyen
+*! December 2019
 
 cap program drop primus_upload
 program define primus_upload, rclass
@@ -139,17 +135,22 @@ cap isid `hhid' `pid'
 foreach x of varlist `welfare' `weight' `povweight'{
 	cap confirm existence `x'
 	if (_rc==0){
-		local thetype: type `x'
-		if ("`thetype'"!="double"){
-		capture window stopbox rusure "It is preferable you upload variable `x' as double precision." ///
+		* Examine precision of variables being uploaded
+        local thetype: type `x'
+		if ("`thetype'"!="double") & ("`nopovcal'"!=""){ //display error for nopovcal uploads, not dialog box
+            display as error "It is preferable that you upload variable `x' with double precision."
+        } 
+        else {
+        capture window stopbox rusure "It is preferable that you upload variable `x' with double precision." ///
 		"Would you like to continue as is?"
-		local stwrk = _rc==0	
-			if (`stwrk'==0){
-				dis as error "Variable `x' must be stored with double precision"
+		local stwrk = _rc==0
+			if (`stwrk'==0){ //If user selects "No" to the previous dialog box
+				dis as error "Variable `x' must be stored with double precision."
 				error 34567 
 				exit
 			}
 		}
+        
 		qui: sum `x'
 		if (r(mean) ==0){
 			dis as error "Variable `x' has mean 0, this should not be the case"
@@ -164,12 +165,13 @@ foreach x of varlist `welfare' `weight' `povweight'{
 	}
 }
 
+
+
 //Remove vars from othervars
 local othervariables : list othervariables - remove1
 local othervariables : list othervariables - welfare
 local othervariables : list othervariables - weight
 local othervariables : list othervariables - povweight
-
 
 
 
@@ -688,7 +690,8 @@ if (trim(upper("`module'"))=="ALL" & "`collection'"=="GMD"){
 			marital lstatus minlaborage empstat industrycat10 industrycat4 school ///
 			literacy educy educat4 educat5 educat7 landphone cellphone computer ///
 			electricity primarycomp countrycode year welfaretype weighttype age ///
-			survey vermast veralt harmonization cpiperiod cpi ppp icpbase
+			survey vermast veralt harmonization cpiperiod cpi ppp icpbase ///
+            imp_wat_rec imp_san_rec landphone cellphone computer electricity
 	
 		noi disp "" _n
 		
@@ -830,7 +833,7 @@ if (trim(upper("`module'"))=="ALL" & "`collection'"=="GMD"){
 	
 	cap assert missing(empstat)
 	if _rc!=0{
-
+        levelsof empstat
 		if wordcount(r(levels)) > 5 {
 			noi disp as err "empstat should not have more than 5 numeric values." ///
 				" It has " wordcount(r(levels)) " values"
@@ -838,7 +841,7 @@ if (trim(upper("`module'"))=="ALL" & "`collection'"=="GMD"){
 		}
 	
 		if wordcount(r(levels)) < 5 {
-			noi disp as err "Caution:" in y " empstat has less than 5 values." 
+			noi disp as err "Caution:" in y" empstat has less than 5 values." 
 		}
 	
 		** check values
@@ -1030,13 +1033,15 @@ if (trim(upper("`module'"))=="ALL" & "`collection'"=="GMD"){
 	}
 	
 /* Age */
+* GMD 2.0 allows age to be a decimal for individuals <5 yrs
+
 	if (`checkage' == 1) {
 	cap assert missing(age)
 		if _rc!=0{		
-			* integers
-			cap assert age == int(age)
+			* integers for individuals older than 5 yrs
+			cap assert age == int(age) if age>5
 			if _rc {
-				noi disp as err "age must be integers only. Check"
+				noi disp as err "age must be integers only for age >5 yrs. Please check!"
 		local flagerr = 1
 			}
 			
@@ -1047,6 +1052,7 @@ if (trim(upper("`module'"))=="ALL" & "`collection'"=="GMD"){
 			}
 		}
 	}
+
 
 /* Survey */
 
@@ -1062,8 +1068,89 @@ if (trim(upper("`module'"))=="ALL" & "`collection'"=="GMD"){
 	
 		}
 	}
+
 	
-	**************************************************
+/* Improved water */
+
+	if (`checkimp_wat_rec' == 1) {
+	cap assert missing(imp_wat_rec)
+		if _rc!=0{
+			cap assert inlist(imp_wat_rec,0,1) | imp_wat_rec == .
+			if _rc {
+				noi disp as err "imp_wat_rec can only take either 0 or 1 as values. Please check!"
+		local flagerr = 1
+			}
+		}
+	}
+
+
+/* Improved sanitation */
+
+	if (`checkimp_san_rec' == 1) {
+	cap assert missing(imp_san_rec)
+		if _rc!=0{
+			cap assert inlist(imp_san_rec,0,1) | imp_san_rec == .
+			if _rc {
+				noi disp as err "imp_san_rec can only take either 0 or 1 as values. Please check!"
+		local flagerr = 1
+			}
+		}
+	}
+    
+/* Landphone */
+
+	if (`checklandphone' == 1) {
+	cap assert missing(landphone)
+		if _rc!=0{
+			cap assert inlist(landphone,0,1) | landphone == .
+			if _rc {
+				noi disp as err "landphone can only take either 0 or 1 as values. Please check!"
+		local flagerr = 1
+			}
+		}
+	}
+    
+/* Cell phone */
+
+	if (`checkcellphone' == 1) {
+	cap assert missing(cellphone)
+		if _rc!=0{
+			cap assert inlist(cellphone,0,1) | cellphone == .
+			if _rc {
+				noi disp as err "cellphone can only take either 0 or 1 as values. Please check!"
+		local flagerr = 1
+			}
+		}
+	}
+    
+/* Computer */
+
+	if (`checkcomputer' == 1) {
+	cap assert missing(computer)
+		if _rc!=0{
+			cap assert inlist(computer,0,1) | computer == .
+			if _rc {
+				noi disp as err "computer can only take either 0 or 1 as values. Please check!"
+		local flagerr = 1
+			}
+		}
+	}
+    
+/* Electricity */
+
+	if (`checkelectricity' == 1) {
+	cap assert missing(electricity)
+		if _rc!=0{
+			cap assert inlist(electricity,0,1) | electricity == .
+			if _rc {
+				noi disp as err "electricity can only take either 0 or 1 as values. Please check!"
+		local flagerr = 1
+			}
+		}
+	}
+    
+    
+**************************************************
 	/* label variables and values for GMD database */
 	**************************************************
 	
@@ -1335,6 +1422,7 @@ cap drop __00*
 noi:dis in green "Foldername: `foldername'"
 noi:dis in green "Filename: `filename'"
 
+*if ((`docheck'==0 | `docheck'==1) & "`collection'"=="GMD"){
 if (`docheck'==1 & "`collection'"=="GMD"){
 
 	noi: primus_check, country(`countrycode') verm(`vermast') vera(`veralt') year(`year') module(`module')
