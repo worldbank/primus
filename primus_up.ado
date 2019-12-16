@@ -1,5 +1,5 @@
-*! primus_up December, 2017 
-* ONE SURVEY AT A TIME!
+*! primus_up.ado
+*! December 2019
 
 cap program drop primus_up
 cap set matastrict off
@@ -95,7 +95,8 @@ if ("`gpwg_wm'"!=""){
 		if (`qwrk'==1){
 			keep if regexm(survey_id,"`surveys'")==1
 			keep if trim(lower(overall_status))=="pending" & trim(lower(uploader))=="true"
-			
+			*set trace on
+            *set traced 1
 			if (_N==0) local donotcompare = 1	
 			else{
 				split survey_id, parse(_)
@@ -165,6 +166,7 @@ else{
 } //END ELSE
 
 //Compare data to previous vintages, or current working versions!!
+
 if ("`collection'"=="GMD"){
 	if (`donotcompare'==0){
 		noi:primuSCompaRe, newy(`newy') natcode(`natcode') year(`years')  gpwg_a(`gpwg_a') gpwg_m(`gpwg_m') gpwg_wm(`gpwg_wm') hhlev(`hhlev') reg(`reg')
@@ -209,7 +211,7 @@ local yyy `years'
 	save `MuDAta'
 		//Price database!
 
-			datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v03_M) filename(Final_CPI_PPP_to_be_used.dta) clear
+			datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v04_M) filename(Final_CPI_PPP_to_be_used.dta) clear
 			local priceproblem=_rc
 			if (`priceproblem'==111|`priceproblem'==0){
 				cap keep if upper(code)==upper("`ccc'")
@@ -240,7 +242,10 @@ local yyy `years'
 			
 			if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC")>0) replace year = year - 1
 			cap drop region
-			qui merge m:1 code year datalevel using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011)
+            ren survey survname
+			qui merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011)
+            ren survname survey 
+*			qui merge m:1 code year datalevel using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011) //SM19 code
 				qui drop if _mcpi==2            
 				qui drop _mcpi
 				cap drop datalevel 
@@ -753,8 +758,9 @@ local yyy `years'
 			else{
 				
 				saveold "`filepath'//`filename'", replace
-				display as error "I saved your data to:`filepath'/`filename' "
-				display as error "Please inform Central Team about your data"				
+				display as error "Your data has been saved to: "
+                display as error "`filepath'/`filename' "
+				display as error "Please inform the Central Team (mnguyen3@worldbank.org) about this upload."				
 			}
 		
 		
@@ -774,7 +780,7 @@ if (`hhlev'==0){
 				cap datalibweb, country(`natcode') year(`year') vera(`gpwg_a') verm(`gpwg_m') type(gmd) mod(gpwg) clear
 				local _dwcall=_rc
 				if (`_dwcall'!=0){
-					dis as error "I was unable to call: datalibweb, country(`natcode') year(`years')  vera(`prev_a') verm(`prev_m') type(gmd) type(gpwg) clear "
+					dis as error "I was unable to call: datalibweb, country(`natcode') year(`years')  vera(`gpwg_a') verm(`gpwg_m') type(gmd) type(gpwg) clear "
 					exit
 				}
 				else{
@@ -818,7 +824,7 @@ if (`hhlev'==0){
 				}			
 				if (`_dwcall'!=0){
 					dis as error "I was unable to call: datalibweb, country(`natcode') year(`years') vera(WRK) verm(`gpwg_wm') type(gmd) mod(gpwg) clear"
-					error 35678989
+					error 356781
 					exit
 				}
 				else{
@@ -871,10 +877,11 @@ else{ //WHEN HH LEVEL COMPARISON IS REQUESTED
 	if (`newy'==0){
 		if ("`gpwg_wm'"==""){
 			preserve
-				cap datalibweb, country(`natcode') year(`years') vera(`gpwg_a') verm(`gpwg_m') type(gmd) mod(gpwg) clear
+				cap datalibweb, country(`natcode') year(`year') vera(`gpwg_a') verm(`gpwg_m') type(gmd) mod(gpwg) clear
 				local _dwcall=_rc
 				if (`_dwcall'!=0){
-					dis as error "I was unable to call: datalibweb, country(`natcode') year(`years')  vera(`prev_a') verm(`prev_m') type(gmd) type(gpwg) clear "
+					dis as error "I was unable to call: datalibweb, country(`natcode') year(`years')  vera(`gpwg_a') verm(`gpwg_m') type(gmd) type(gpwg) clear "
+                    error 356782 
 					exit
 				}
 				else{
@@ -914,7 +921,7 @@ else{ //WHEN HH LEVEL COMPARISON IS REQUESTED
 			}			
 			if (`_dwcall'!=0){
 				dis as error "I was unable to call: datalibweb, country(`natcode') year(`years') vera(WRK) verm(`gpwg_wm') type(gmd) mod(gpwg) clear"
-				error 35678989
+				error 356783
 				exit
 			}
 			else{
