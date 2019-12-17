@@ -11,3 +11,5 @@ The SM20 version (released in December 2019) incorporates the following changes 
 -	Primus now gives an error message if any of the required GMD 1.5 variables are missing in the upload file. The following GMD 1.5 variables (previously optional) are now required in any GMD upload: imp_wat_rec, imp_san_rec, landphone, cellphone, computer, electricity.
 -	Fixed an minor error in the variable check for empstat
 -	The CPI database now allows for uploading multiple surveys within a given year
+
+Please send any suggestions for improvement to the D4G Central Team (Nobuo Yoshida and Minh Cong Nguyen) or to Ani Rudra Silwal (asilwal@worldbank.org).
