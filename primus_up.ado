@@ -166,7 +166,6 @@ else{
 } //END ELSE
 
 //Compare data to previous vintages, or current working versions!!
-
 if ("`collection'"=="GMD"){
 	if (`donotcompare'==0){
 		noi:primuSCompaRe, newy(`newy') natcode(`natcode') year(`years')  gpwg_a(`gpwg_a') gpwg_m(`gpwg_m') gpwg_wm(`gpwg_wm') hhlev(`hhlev') reg(`reg')
@@ -180,91 +179,102 @@ else{
 
 
 //Keep only one weight type if GPWG
-if (regexm("`filename'","GPWG")==1){
-	cap drop weight_h
-	cap rename weight_p weight
-	local theW weight
-}
-else{
-	cap rename weight weight_p
-	local theW weight_p
-}
+    if (regexm("`filename'","GPWG")==1){
+        cap drop weight_h
+        cap rename weight_p weight
+        local theW weight
+    }
+    else{
+        cap rename weight weight_p
+        local theW weight_p
+    }
 
-if ("`gotoprimus'"!="1" & `nopovcal'!=1){
-dis as error "You have not specified the nopovcal option, and thus data will not be submitted for confirmation"
-error 29024
-exit
-}
+    if ("`gotoprimus'"!="1" & `nopovcal'!=1){
+        dis as error "You have not specified the nopovcal option, and thus data will not be submitted for confirmation"
+        error 29024
+    exit
+    }
 
-if ("`gotoprimus'"=="1" & `nopovcal'==1){
-	dis as error "Your data needs to be uploaded to povcalnet and trigger a transaction ID"
-	error 2929292
-	exit
-}
+    if ("`gotoprimus'"=="1" & `nopovcal'==1){
+        dis as error "Your data needs to be uploaded to povcalnet and trigger a transaction ID"
+        error 2929292
+        exit
+    }
 
-local ccc `natcode'
-local yyy `years'
-	di in red "`ccc':`yyy':`surveys':`vermast_p':`veralt_p'"
-	
-	
-	tempfile MuDAta
-	save `MuDAta'
-		//Price database!
+    local ccc `natcode'
+    local yyy `years'
+    di in red "`ccc':`yyy':`surveys':`vermast_p':`veralt_p'"
+        
+    tempfile MuDAta
+    save `MuDAta'
 
-			datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v04_M) filename(Final_CPI_PPP_to_be_used.dta) clear
-			local priceproblem=_rc
-			if (`priceproblem'==111|`priceproblem'==0){
-				cap keep if upper(code)==upper("`ccc'")
-				if (_rc) keep if upper(countrycode)==upper("`ccc'")
-				tempfile cpi_
-				save `cpi_'
-			}
-			else{
-				dis as error "Unable to load price database"
-				error 128384
-				exit
-			}
-			
+//Price database!
+    qui datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v04_M) filename(Final_CPI_PPP_to_be_used.dta) clear
+    di r(cmdline)
+    local priceproblem=_rc
+    if (`priceproblem'==111|`priceproblem'==0){
+        cap keep if upper(code)==upper("`ccc'")
+        if (_rc) keep if upper(countrycode)==upper("`ccc'")
+        tempfile cpi_
+        save `cpi_'
+    }
+    else{
+        dis as error "Unable to load price database"
+        error 128384
+        exit
+    }
+        
 	use `MuDAta', clear
 	
-			//Datalevel
-			if ("`=upper("`ccc'")'"=="IDN" | "`=upper("`ccc'")'"=="CHN" | "`=upper("`ccc'")'"=="IND"){
-				gen datalevel = 1
-				local method EmbeddedCPI
-			}
-			else {
-				gen datalevel = 2
-			}
-			//Merge CPI
-			cap gen code = "`=upper("`ccc'")'"
-			cap drop cpi*
-			cap drop icp*
-			
-			if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC")>0) replace year = year - 1
-			cap drop region
-            ren survey survname
-			qui merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011)
-            ren survname survey 
-*			qui merge m:1 code year datalevel using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011) //SM19 code
-				qui drop if _mcpi==2            
-				qui drop _mcpi
-				cap drop datalevel 
-				cap drop ppp_note
-			
-			//define deflators	
-			local cpi cpi2011
-			local ppp icp2011
-			if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC")>0) replace year = year + 1 
-			
-			local refyr = `refyear'
-			if ("`refyr'"=="."|strpos("`surveys'","SILC")>0){
-				if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC-C")>0) local refyr `=`yyy'-1'
-				else local refyr `yyy'
-			}
-						 
-			tempfile dataout
-			save `dataout',replace
-			cap log close logall
+//Datalevel
+    if ("`=upper("`ccc'")'"=="IDN" | "`=upper("`ccc'")'"=="CHN" | "`=upper("`ccc'")'"=="IND"){
+        gen datalevel = 1
+        local method EmbeddedCPI
+    }
+    else {
+        gen datalevel = 2
+    }
+    
+//Merge CPI
+    cap gen code = "`=upper("`ccc'")'"
+    cap drop cpi*
+    cap drop icp*
+
+    if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC")>0) replace year = year - 1
+
+    cap drop region
+    ren survey survname
+    qui merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011)
+    ren survname survey 
+
+    * Display error if CPI data cannot be merged into the dataset being uploaded
+        *ta _mcpi
+        qui count if _mcpi==1 //Count observations that could not be merged with CPI data
+        if r(N) !=0{
+            dis as error "Your survey could not be fully merged with CPI data. Please contact the Central Team and review Final_CPI_PPP_to_be_used.dta."
+            error 12345
+        }
+        * qui merge m:1 code year datalevel using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011) //SM19 code
+
+        qui drop if _mcpi==2            
+        qui drop _mcpi
+        cap drop datalevel 
+        cap drop ppp_note
+
+//define deflators	
+    local cpi cpi2011
+    local ppp icp2011
+    if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC")>0) replace year = year + 1 
+
+    local refyr = `refyear'
+    if ("`refyr'"=="."|strpos("`surveys'","SILC")>0){
+        if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC-C")>0) local refyr `=`yyy'-1'
+        else local refyr `yyy'
+    }
+                 
+tempfile dataout
+save `dataout',replace
+cap log close logall
 			
 		
 			***************************** XML ***************************
@@ -972,7 +982,7 @@ program define MyPriCeData, rclass
 version 11.2
 syntax, code(string) year(numlist max=1) survey(string) [datalevel(string)]
 
-cap datalibweb, country(support) year(2005) type(gmdraw) filename(Survey_price_framework.dta) surveyid(Support_2005_CPI_v03_M)
+cap datalibweb, country(support) year(2005) type(gmdraw) filename(Survey_price_framework.dta) surveyid(Support_2005_CPI_v04_M)
 if _rc!=0{
 	dis as error "Unable to load Survey_price_framework.dta"
 	error 123454
