@@ -5,9 +5,9 @@
 
 make primus,  toc pkg  version(0.0.0.9000)                                   ///
      license("MIT")                                                          ///
-     author("R.Andres Castaneda")                                            ///
+     author("Ani Rudra Silwal and R.Andres Castaneda")                                            ///
      affiliation("The World Bank")                                           ///
-     email("acastanedaa@worldbank.org")                                      ///
+     email("asilwal@worldbank.org")                                      ///
      url("https://github.com/worldbank/primus")                              ///
      title("PRIMUS")                                                         ///
      description("The Primus ado files for Stata in this GitHub repo are a critical component of this process. These allow for data sharing and file upload service that ensures that estimations are based on identical source data.") ///
