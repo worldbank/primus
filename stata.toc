@@ -1,0 +1,9 @@
+v 0.0.0.9000
+d Materials by R.Andres Castaneda
+d The World Bank
+d acastanedaa@worldbank.org
+d https://github.com/worldbank/primus
+
+d 'primus': The Primus ado files for Stata in this GitHub repo are a critical component of this process. These allow for data sharing and file upload service that ensures that estimations are based on identical source data.
+
+p primus
