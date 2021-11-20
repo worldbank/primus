@@ -209,7 +209,7 @@ else{
     save `MuDAta'
 
 //Price database!
-    qui datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v05_M) filename(Final_CPI_PPP_to_be_used.dta) clear
+    qui datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v06_M) filename(Final_CPI_PPP_to_be_used.dta) clear
     di r(cmdline)
     local priceproblem=_rc
     if (`priceproblem'==111|`priceproblem'==0){
