@@ -3,11 +3,11 @@
 // DO NOT FORGET to update the version of the package, if changed!
 // for more information visit http://github.com/haghish/github
 
-make primus,  toc pkg  version(0.0.0.9000)                                   ///
+make primus,  toc pkg  version(0.0.0.9100)                                   ///
      license("MIT")                                                          ///
-     author("Ani Rudra Silwal and R.Andres Castaneda")                                            ///
+     author("D4G team")                                            ///
      affiliation("The World Bank")                                           ///
-     email("asilwal@worldbank.org")                                      ///
+     email("data4goals@worldbank.org")                                      ///
      url("https://github.com/worldbank/primus")                              ///
      title("PRIMUS")                                                         ///
      description("The Primus ado files for Stata in this GitHub repo are a critical component of this process. These allow for data sharing and file upload service that ensures that estimations are based on identical source data.") ///
