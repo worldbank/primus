@@ -53,7 +53,7 @@ program define primus_upload, rclass
            psu(varname)                         ///
            note(string)                         ///
            SAVEPath(string)                     ///
-           ICPbase(integer 2011)                ///
+           ICPbase(integer 2017)                ///
            save13                               ///
            restricted                           ///
            replace                              ///
@@ -508,8 +508,8 @@ if ("`collection'"=="PCN"){
 	
 	* ICPbase
 	
-	if !inlist(`icpbase', 2005, 2011) {
-		noi disp in red "ICPbase variable must be either 2005 or 2011. Default 2011."
+	if !inlist(`icpbase', 2005, 2011, 2017) {
+		noi disp in red "ICPbase variable must be either 2005 or 2011 or 2017. Default 2017."
 		local flagerr = 1
 	}
 	else {
