@@ -300,6 +300,7 @@ cap log close logall
 			if "`weightlist'"=="" local weightlist `theW'
 			if "`pppyear'"=="" local pppyear 2011
 			if "`plines'"=="" {
+				if `pppyear'==2017 local plines 2.15 3.65
 				if `pppyear'==2011 local plines 1.9 3.2
 				if `pppyear'==2005 local plines 1.25 2.0
 			}
