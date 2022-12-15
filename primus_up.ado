@@ -244,7 +244,7 @@ else{
 
     cap drop region
     ren survey survname
-    qui merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2011 icp2011)
+    qui merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(region countryname ref_year cpi2017 icp2017)
     ren survname survey 
 
     * Display error if CPI data cannot be merged into the dataset being uploaded
@@ -262,8 +262,8 @@ else{
         cap drop ppp_note
 
 //define deflators	
-    local cpi cpi2011
-    local ppp icp2011
+    local cpi cpi2017
+    local ppp icp2017
     if (strpos("`surveys'","EU-SILC")>0 | strpos("`surveys'","SILC")>0) replace year = year + 1 
 
     local refyr = `refyear'
@@ -290,7 +290,7 @@ cap log close logall
 			//Setup for XML
 			//local byvar 
 			local countrycode `ccc'
-			local pppyear 2011
+			local pppyear 2017
 			local surveyid `surveys'
 			local filename `fname'
 			local year `yyy'
@@ -298,7 +298,7 @@ cap log close logall
 			
 			if "`weflist'"=="" local weflist welfare
 			if "`weightlist'"=="" local weightlist `theW'
-			if "`pppyear'"=="" local pppyear 2011
+			if "`pppyear'"=="" local pppyear 2017
 			if "`plines'"=="" {
 				if `pppyear'==2017 local plines 2.15 3.65
 				if `pppyear'==2011 local plines 1.9 3.2
