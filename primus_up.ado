@@ -209,7 +209,7 @@ else{
     save `MuDAta'
 
 //Price database!
-    qui datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v09_M) filename(Final_CPI_PPP_to_be_used.dta) clear
+    qui datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v10_M) filename(Final_CPI_PPP_to_be_used.dta) clear
     di r(cmdline)
     local priceproblem=_rc
     if (`priceproblem'==111|`priceproblem'==0){
@@ -983,7 +983,7 @@ program define MyPriCeData, rclass
 version 11.2
 syntax, code(string) year(numlist max=1) survey(string) [datalevel(string)]
 
-cap datalibweb, country(support) year(2005) type(gmdraw) filename(Survey_price_framework.dta) surveyid(Support_2005_CPI_v09_M)
+cap datalibweb, country(support) year(2005) type(gmdraw) filename(Survey_price_framework.dta) surveyid(Support_2005_CPI_v10_M)
 if _rc!=0{
 	dis as error "Unable to load Survey_price_framework.dta"
 	error 123454
