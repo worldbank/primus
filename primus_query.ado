@@ -1,5 +1,5 @@
-*! version 0.0.1  23Feb2018
-*! Copyright (C) World Bank 2017-18 
+*! version 0.1.1  12Sep2014
+*! Copyright (C) World Bank 2017-2024 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,40 +14,31 @@
 * You should have received a copy of the GNU General Public License
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-capture program define _primus, plugin using("Primus`=cond(strpos(`"`=c(machine_type)'"',"64"),64,32)'.dll")
 cap program drop primus_query
 program primus_query, rclass
-	version 11.0
+	version 16.0
 	syntax [anything] [,                  ///
 	COUNtry(string) Year(string)          ///
 	Region(string) OVERALLStatus(string) ///
-	PENDINGwith(string) TRANxid(string)]
+	PENDINGwith(string) TRANxid(string) PROCessid(string)]
 
 	local opt 1
 	local server 3
-	global errcodep = 0
+	*global errcodep = 0
 	//housekeeping
 	local regionlist `" "ECA", "EAP", "MNA", "LAC", "SSA", "SAR" "'
-	local overallstatuslist `" "APPROVED", "PENDING", "REJECTED" "'
-	local pendingwithlist `" "DECDG", "FINALIZER", "POVCALNET", "REGIONAL", "UPLOADER" "'
-	
-	local yearkey DataYear
-	local countrykey Country
-	local regionkey Region
-	local overallstatuskey OverallStatus
-	local pendingwithkey Pendingwith
-	local tranxidkey TransactionId
-	
-	local RequestKey
+	local overallstatuslist `" "COMPLETE", "PENDING", "REJECT", "DELETED", "DRAFT" "'
+	local pendingwithlist `" "DEC", "FINALIZER", "REGIONAL", "UPLOADER" "'
+		
+	local RequestKey server=${webserver}
 
-	local loclist country year region overallstatus pendingwith tranxid
+	local loclist country year region overallstatus pendingwith //tranxid
 	foreach loc of local loclist {
 		if "``loc''" ~="" {
 			local `loc' `=upper("``loc''")'
 			if "`loc'"=="country" | "`loc'"=="year" | "`loc'"=="tranxid" {
-				local `loc' :  subinstr local `loc' " " "", all
-				if "`RequestKey'"=="" local RequestKey ``loc'key'=``loc''
-				else local RequestKey `RequestKey'&``loc'key'=``loc''
+				local `loc' :  subinstr local `loc' " " "", all				
+				local RequestKey `RequestKey'&`loc'=``loc''
 			}
 			else { //other locs with checks
 				if `=wordcount("``loc''")' > 1 {
@@ -61,9 +52,8 @@ program primus_query, rclass
 						global errcodep = 198
 						error 198
 					}
-					else {
-						if "`RequestKey'"=="" local RequestKey ``loc'key'=``loc''
-						else local RequestKey `RequestKey'&``loc'key'=``loc''
+					else {						
+						local RequestKey `RequestKey'&`loc'=``loc''
 					}
 				}
 			}	
@@ -72,32 +62,26 @@ program primus_query, rclass
 	
 	//getting API
 	tempfile primusout
-	qui plugin call _primus , "`opt'" "`RequestKey'" "`primusout'" "`server'"	
-	if `primusRC'==0 {
-		cap insheet using "`primusout'", clear	
+	primus_api, option(1) query("`RequestKey'") outfile(`primusout')
+	if `primusrc'==0 {
+		cap insheet using "`primusout'", clear
 		if _rc==0 {
-			if _N==0 { 
-				cap confirm numeric variable transaction_id
-				if _rc==0 {
-					noi dis in yellow "Nothing found based on the input. Please redefine the parameters."
-					global errcodep = 1
-					clear
-				}
-			}
-			else {
-				noi dis as text "Successful load the query data into Stata!"
-				global errcodep = 0
-				gen double date_modified1 = clock(date_modified, "MDYhms")
-				format %tc date_modified1
-				drop date_modified
-				ren date_modified1 date_modified
-			}
-		} //rc insheet
-		else {
-			noi dis as error "Failed to load the data. Please redefine the parameters."
-			global errcodep = 1
-			error 1
+			noi dis as text in yellow "PRIMUS transaction ID list is loaded in Stata. Browse and see."
+			global errcodep = 0
+			gen double date_modified1 = clock(date_modified, "MDYhms")
+			format %tc date_modified1
+			drop date_modified
+			ren date_modified1 date_modified
 		}
-	} //rc primus
-
+		else {
+			noi dis as error "Unknow error - Unable to load the downloaded meta datafile."	
+			global errcodep `=_rc'
+			error `=_rc'
+		}			
+	}
+	else {
+		primus_message, error(`=_rc')
+		global errcode `=_rc'			
+		error 1						
+	}
 end

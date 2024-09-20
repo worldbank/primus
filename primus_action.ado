@@ -1,5 +1,5 @@
-*! version 0.0.1  23Feb2018
-*! Copyright (C) World Bank 2017-18 
+*! version 0.1.1  12Sep2014
+*! Copyright (C) World Bank 2017-2024 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,18 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-capture program define _primus, plugin using("Primus`=cond(strpos(`"`=c(machine_type)'"',"64"),64,32)'.dll")
 cap program drop primus_action
 program primus_action, rclass
-	version 11.0
+	version 16.0
 	syntax [anything] [,                  ///
-	TRANxid(string) INDEXid(string)       ///
+	TRANxid(string) PROCessid(string) INDEXid(string)       ///
 	Decision(string) Comments(string) ]
 	
-	global errcodep 0
-	local opt 3
-	local server 3
-	global errcodep = 0
+	local option 3	
 	tempfile decisionout
 	if "`tranxid'"~="" {
 		local tranxid `=upper("`tranxid'")'
@@ -33,56 +29,42 @@ program primus_action, rclass
 		if `= wordcount("`tranxid'")' > 1 {
 			noi dis as error "There should be ONLY one transaction ID"
 			global errcodep = 1
+			error 198
 		}
 		else { //tranxid
 			if `= wordcount("`decision'")' > 1 {
-				noi dis as error "There should be ONLY one decision"
+				noi dis as error "There should be ONLY one decision: APPROVE, or REJECT, or CONFIRM"
 				global errcodep = 1
 				error 198
 			}
 			else { //decision
-				if (!inlist("`decision'","APPROVED", "REJECTED", "CONFIRMED")) {
-					noi disp as error "The input on the decision() is not correct. Available options are: APPROVE, REJECT."
+				if (!inlist("`decision'","APPROVE", "REJECT", "CONFIRM")) {
+					noi disp as error "The input on the decision() needs to be corrected. Available options are: APPROVE, REJECT."
+					global errcodep = 1
 					error 198
 				}
 				else {
-					if "`decision'"=="REJECTED" & "`comments'"=="" {
+					if "`decision'"=="REJECT" & "`comments'"=="" {
 						noi dis as error "You must have comments when rejecting a transaction"
 						global errcodep = 1
 						error 198
 					}
-					if ("`decision'"=="APPROVED" | "`decision'"=="CONFIRMED") & "`comments'"=="" local comments `=c(username)'
+					if ("`decision'"=="APPROVE" | "`decision'"=="CONFIRM") & "`comments'"=="" local comments `=c(username)'
 					
 					//API
-					qui plugin call _primus , "`opt'" "TransactionId=`tranxid'&Decision=`decision'&Comments=`comments'&IndexID=`indexid'" "`decisionout'" "`server'"					
-					if `primusRC'==0 {
-						cap insheet using "`decisionout'", clear
-						if _rc==0 {
-							if _N>0 {
-								noi dis as text in red "{p 4 4 2}`=action_status[1]'{p_end}"
-								if `=error_code[1]'~=3 {
-									clear
-									error 1
-								}
-								else clear
-							}
-							else {
-								noi dis as error "Fail to put action (`decision') for the transaction ID `tranxid'!"
-								global errcodep = 1
-								error 198
-							}
-						} //insheet
-						else {
-							noi dis as error  "Fail to put action (`decision') for the transaction ID `tranxid'!"
-							global errcodep = 1
-							error 198
-						}
-					} //plugin
+					primus_api, option(`option') query("tranx=`tranxid'&processid=`processid'&server=${webserver}&Decision=`decision'&Comments=`comments'")								
+					if `primusrc'==0 {
+						return local prmAction "`prmAction'"						
+						return local prmSurveyID "`prmSurveyID'"
+						return local prmTransID "`prmTransID'"
+						
+						noi dis as text in yellow "{p 4 4 2}Transaction ID `prmTransID' for `prmSurveyID' is `decision'(ED), and it is now in `prmAction'.{p_end}"
+					}
 					else {
-						noi dis as error  "Fail to put action (`decision') for the transaction ID `tranxid'!"
+						noi dis as error `"Transaction ID `tranxid' - `prmErrMsg'"'
 						global errcodep = 1
 						error 198
-					}
+					}						
 				}
 			} //decision
 		} //xid
