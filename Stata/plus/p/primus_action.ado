@@ -31,7 +31,7 @@ program primus_action, rclass
 			global errcodep = 1
 			error 198
 		}
-		else { //tranxid
+		else { //tranxid2
 			if `= wordcount("`decision'")' > 1 {
 				noi dis as error "There should be ONLY one decision: APPROVE, or REJECT, or CONFIRM"
 				global errcodep = 1

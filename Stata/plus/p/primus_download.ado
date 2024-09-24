@@ -36,7 +36,7 @@ program primus_download, rclass
 	
 	//4 meta server list
 	if "`meta'"~="" {
-		primus_api, option(4) outfile(`primusout')
+		primus_api, option(4) query("server=${webserver}") outfile(`primusout')
 		if `primusrc'==0 {
 			cap insheet using "`primusout'", clear
 			if _rc==0 {

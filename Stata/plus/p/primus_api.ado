@@ -1,6 +1,19 @@
 *! version 0.1.1  12Sep2014
 *! Copyright (C) World Bank 2017-2024 
 
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 program define primus_api
     version 16.0
 
@@ -31,7 +44,7 @@ prmTransID:     006-000327173-MNARAW-ALB-679e6
 */
 program define _primus_api_v2, rclass
     version 16.0
-    syntax, OPTion(integer) [Query(string) OUTfile(string) INfile(string) Token(string)]
+    syntax, OPTion(string) [Query(string) OUTfile(string) INfile(string) Token(string)]
 	
     capture program define _primus_v2, plugin using("Primus2_`=cond(strpos(`"`=c(machine_type)'"',"64"),64,32)'.dll")	
     if _rc > 0 & _rc != 110 {
@@ -46,10 +59,10 @@ program define _primus_api_v2, rclass
 	local user = subinstr("`user'","D","",.)
 			
 	//load register first it is asked via dlw_api
-	if (`option'==8) { //register token
+	if ("`option'"=="8") { //register token
 		if "`token'"~="" {			
 			local user = `=9-length("`user'")'*"0" + "`user'"
-			cap plugin call _primus_v2, "`option'" "upi=`user'&token=`token'"
+			dis `"cap plugin call _primus_v2, "`option'" "upi=`user'&token=`token'""'
 			if _rc==0 {
 				noi dis as text "PRIMUS/Datalibweb token is registered. The token is valid for 30 days as indicated in the datalibweb website."
 			}
@@ -70,13 +83,13 @@ program define _primus_api_v2, rclass
 	} //opt 8
 	else { //other API options, not 8	
 		//2-paras
-		if (`option'==3) { //Method 3: Action on a transaction in a process  
+		if ("`option'"=="3") { //Method 3: Action on a transaction in a process  
 			cap plugin call _primus_v2, "`option'" "`query'"
 			//plugin call primus, "3" "tranx=&processid=&server=&Decision=&Comments="
 		}
 		
 		//3-paras 0a 0b 1 2a 2b 4 5 6b 7 9  
-		if (`option'=="0a" | `option'=="0b" | `option'==1 |`option'=="2a" |`option'=="2b" |`option'==4 |`option'==5 |`option'=="6b" |`option'==7 |`option'==9) { 
+		if ("`option'"=="0a" | "`option'"=="0b" | "`option'"=="1" |"`option'"=="2a" |"`option'"=="2b" |"`option'"=="4" |"`option'"=="5" |"`option'"=="6b" |"`option'"=="7" |"`option'"=="9") { 
 			//Method 7:  Explore survey name, surveyid, versioning across processes/servers
 			cap plugin call _primus_v2, "`option'" "`query'"  "`outfile'"
 			
@@ -107,7 +120,7 @@ program define _primus_api_v2, rclass
 		}
 		
 		//4-paras
-		if (`option'=="0c" | `option'=="0d" | `option'=="6a") {
+		if ("`option'"=="0c" | "`option'"=="0d" | "`option'"=="6a") {
 			cap plugin call _primus_v2, "`option'" "`query'"  "`infile'" "`outfile'"
 			//4-para
 			//Method 0c: Raw Process – Zip File Upload
@@ -121,6 +134,7 @@ program define _primus_api_v2, rclass
 		}
 				
 		if _rc==0 {
+		*if `primusrc'==0 {
 			c_local primusrc "`primusrc'"
 			c_local prmErrMsg "`prmErrMsg'"
 			c_local prmAction "`prmAction'"
