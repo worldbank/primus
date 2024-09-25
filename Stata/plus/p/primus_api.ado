@@ -30,18 +30,11 @@ program define primus_api
 	c_local prmAction "`prmAction'"
     c_local prmFileName "`prmFileName'"
     c_local prmDataSize "`prmDataSize'"
-	c_local prmSurveyID "`prmSurveyID'"
-	c_local prmTransID "`prmTransID'"
+	c_local prmSurveyId "`prmSurveyId'"
+	c_local prmTransId "`prmTransId'"
     
 end
 
-/*
-primusrc:       0
-prmDataSize:    1159160
-prmFileName:    VNM_2022_VHLSS_v01_M_v01_A_EAPPOV_POV.dta
-prmSurveyID:    ALB_2023_EIGHTw3_V03_M
-prmTransID:     006-000327173-MNARAW-ALB-679e6
-*/
 program define _primus_api_v2, rclass
     version 16.0
     syntax, OPTion(string) [Query(string) OUTfile(string) INfile(string) Token(string)]
@@ -62,7 +55,7 @@ program define _primus_api_v2, rclass
 	if ("`option'"=="8") { //register token
 		if "`token'"~="" {			
 			local user = `=9-length("`user'")'*"0" + "`user'"
-			dis `"cap plugin call _primus_v2, "`option'" "upi=`user'&token=`token'""'
+			cap plugin call _primus_v2, "`option'" "upi=`user'&token=`token'&server=${webserver}"
 			if _rc==0 {
 				noi dis as text "PRIMUS/Datalibweb token is registered. The token is valid for 30 days as indicated in the datalibweb website."
 			}
@@ -84,14 +77,18 @@ program define _primus_api_v2, rclass
 	else { //other API options, not 8	
 		//2-paras
 		if ("`option'"=="3") { //Method 3: Action on a transaction in a process  
-			cap plugin call _primus_v2, "`option'" "`query'"
-			//plugin call primus, "3" "tranx=&processid=&server=&Decision=&Comments="
+			noi dis `"cap plugin call _primus_v2, "`option'" "`query'""'
+			cap plugin call _primus_v2, "`option'" "`query'"			
 		}
 		
 		//3-paras 0a 0b 1 2a 2b 4 5 6b 7 9  
 		if ("`option'"=="0a" | "`option'"=="0b" | "`option'"=="1" |"`option'"=="2a" |"`option'"=="2b" |"`option'"=="4" |"`option'"=="5" |"`option'"=="6b" |"`option'"=="7" |"`option'"=="9") { 
+			if ("`option'"=="0a" | "`option'"=="0b" ) local txtopt `infile' 
+			else local txtopt `outfile'
+			
 			//Method 7:  Explore survey name, surveyid, versioning across processes/servers
-			cap plugin call _primus_v2, "`option'" "`query'"  "`outfile'"
+			noi dis `"cap plugin call _primus_v2, "`option'" "`query'"  "`txtopt'" "'
+			cap plugin call _primus_v2, "`option'" "`query'"  "`txtopt'"
 			
 			//plugin call primus, "7" "server=&country=[&year=&survname=]"  "name&path_to_Output"  
 			//Method 0a: Raw Process – File Upload
@@ -121,6 +118,7 @@ program define _primus_api_v2, rclass
 		
 		//4-paras
 		if ("`option'"=="0c" | "`option'"=="0d" | "`option'"=="6a") {
+			dis `"cap plugin call _primus_v2, "`option'" "`query'"  "`infile'" "`outfile'""'
 			cap plugin call _primus_v2, "`option'" "`query'"  "`infile'" "`outfile'"
 			//4-para
 			//Method 0c: Raw Process – Zip File Upload
@@ -140,8 +138,8 @@ program define _primus_api_v2, rclass
 			c_local prmAction "`prmAction'"
 			c_local prmFileName "`prmFileName'"
 			c_local prmDataSize "`prmDataSize'"
-			c_local prmSurveyID "`prmSurveyID'"
-			c_local prmTransID "`prmTransID'"			
+			c_local prmSurveyId "`prmSurveyId'"
+			c_local prmTransId "`prmTransId'"			
 		}
 		else {
 			primus_message, error(`=_rc')

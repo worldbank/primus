@@ -39,7 +39,7 @@ program primus_upload, rclass
 	}
 	else {
 		local nunderscore = `=length("`surveyid'")' - `=length(subinstr("`surveyid'", "_", "", .))'		
-		if (!inlist("`nunderscore'",4,7)) {
+		if (!inlist(`nunderscore',4,7)) {
 			noi disp in red `"At the moment, the system only accepts these SurveyID format: CCC_YYYY_SURVNAME_V0number1_M or CCC_YYYY_SURVNAME_V0number1_M_V0number1_A_COLLECTION"'
 			global errcodep = 198
 			error 198
@@ -85,25 +85,27 @@ program primus_upload, rclass
 	
 	//zip vs nozip
 	if "`zip'"=="" {
-		if "`folderpath'"=="" {
-			noi dis as error "Relative folderpath() is needed, e.g., Data/Harmonized or Data/Stata."
-			global errcodep = 198
-			error 198
-		}
-		else { //folderpath~=""
-			if `=wordcount("`folderpath'")' > 1 {
-				noi disp in red `"One relative folderpath() is needed, e.g., Data/Harmonized or Data/Stata."'
+		if "`xmlbl'"=="" {
+			if "`folderpath'"=="" {
+				noi dis as error "Relative folderpath() is needed, e.g., Data/Harmonized or Data/Stata."
 				global errcodep = 198
 				error 198
 			}
-			else {
-				//check to convert \ to /
-			}
-		}
+			else { //folderpath~=""
+				if `=wordcount("`folderpath'")' > 1 {
+					noi disp in red `"One relative folderpath() is needed, e.g., Data/Harmonized or Data/Stata."'
+					global errcodep = 198
+					error 198
+				}
+				else {				
+					local folderpath `= subinstr("`folderpath'", "\", "/",.)'
+				}
+			} //folderpath
+		} //xmllb
 	}
 	else { //zip
 		if "`folderpath'"~="" {
-			noi dis as error "No need to have Relative folderpath() for the zip upload."
+			noi dis as error "No need to have relative folderpath() for the zip upload."
 			global errcodep = 198
 			error 198
 		}
@@ -114,26 +116,11 @@ program primus_upload, rclass
 		}
 	}
 		
-	//Type and upload	
-	/*
-	if "`type'"=="RAW" {
-		if "`zip'"~="" primus_api, option(0c) query("`reqkey'&folderpath=`folderpath'") infile(`infile') outfile(`outfile')
-		else primus_api, option(0a) query("`reqkey'&folderpath=`folderpath'") infile(`infile')
-	}
-	else { //harmonized
-		if "`xmlbl'"~="" local reqkey `reqkey'&xmlbl=true
-		else local reqkey `reqkey'&xmlbl=false
-		
-		if "`zip'"~="" primus_api, option(0d) query("`reqkey'&folderpath=`folderpath'") infile(`infile') outfile(`outfile')
-		else primus_api, option(0b) query("`reqkey'&folderpath=`folderpath'") infile(`infile')
-	}
-	*/
-	
 	if "`type'"=="RAW" {
 		if "`zip'"=="" local opt 0a
 		else {
 			local opt 0c 
-			local outtxt outfile(`outfile')
+			local outtxt outfile(`primusout')
 		}		
 	}
 	else { //harmonized
@@ -142,7 +129,7 @@ program primus_upload, rclass
 		if "`zip'"=="" local opt 0b
 		else {
 			local opt 0d
-			local outtxt outfile(`outfile')
+			local outtxt outfile(`primusout')
 		}		
 	}
 	
@@ -150,16 +137,27 @@ program primus_upload, rclass
 	if `primusrc'==0 {
 		return local prmFileName "`prmFileName'"
 		return local prmDataSize "`=round(`=`prmDataSize'/1048576',.01)'"
-		return local prmSurveyID "`prmSurveyID'"
-		return local prmTransID "`prmTransID'"
+		return local prmSurveyId "`prmSurveyId'"
+		return local prmTransId "`prmTransId'"
 		
-		if "`xmlbl'"~="" noi dis as text in yellow "File `prmFileName' (`=round(`=`prmDataSize'/1048576',.01)'mb) is uploaded as transaction details of `prmSurveyID'. The transaction ID is `prmTransID'."	
-		else noi dis as text in yellow "File `prmFileName' (`=round(`=`prmDataSize'/1048576',.01)'mb) is uploaded into `prmSurveyID'. The transaction ID is `prmTransID'."
+		if "`xmlbl'"~="" noi dis as text in yellow "File `prmFileName' (`=round(`=`prmDataSize'/1048576',.01)'mb) is uploaded as transaction details of `prmSurveyId'. The transaction ID is `prmTransId'."	
+		else noi dis as text in yellow "File `prmFileName' (`=round(`=`prmDataSize'/1048576',.01)'mb) is uploaded into `folderpath' of `prmSurveyId'. The transaction ID is `prmTransId'."
 		
 		if "`outtxt'"~="" {
 			cap insheet using "`primusout'", clear
 			if _rc==0 {						
 				noi dis as text in yellow "Browse and see the list of successfully uploaded files."
+				if "`outfile'"~="" {
+					cap copy `primusout' `outfile', replace
+					if _rc==0 {
+						noi dis as text in yellow "Uploaded status list is saved in the file `outfile'."
+					}
+					else {
+						noi dis as error "Cannot save the output to the file `outfile'."	
+						global errcodep `=_rc'
+						*error `=_rc'
+					}
+				}
 			}
 			else {
 				noi dis as error "Unknow error - Unable to load the meta datafile."	

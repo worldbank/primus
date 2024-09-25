@@ -17,7 +17,7 @@
 cap program drop primus_register
 program primus_register, rclass
 	version 11.0
-	syntax [anything] [, token(passthru) ] 
+	syntax [anything] [, token(string) ] 
 	primus_api, option(8) token(`token')
 	
 end

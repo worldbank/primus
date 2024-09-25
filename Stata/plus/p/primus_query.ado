@@ -30,7 +30,7 @@ program primus_query, rclass
 	local overallstatuslist `" "COMPLETE", "PENDING", "REJECT", "DELETED", "DRAFT" "'
 	local pendingwithlist `" "DEC", "FINALIZER", "REGIONAL", "UPLOADER" "'
 		
-	local RequestKey server=${webserver}
+	local RequestKey processid=`processid'&server=${webserver}
 
 	local loclist country year region overallstatus pendingwith //tranxid
 	foreach loc of local loclist {
@@ -48,7 +48,7 @@ program primus_query, rclass
 				}
 				else {
 					if (!inlist("``loc''",``loc'list')) {
-						noi disp in red `"The input on the region() is not correct. Available options are: ``loc'list'."'
+						noi disp in red `"The input on the `loc'() is not correct. Available options are: ``loc'list'."'
 						global errcodep = 198
 						error 198
 					}

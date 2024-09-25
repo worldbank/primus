@@ -86,6 +86,19 @@ program primus_download, rclass
 	//Explore survname across the system
 	if "`explore'"~="" {
 		local RequestKey server=${webserver}
+		if "`country'"=="" {
+			noi dis as error "One country code in the country() is needed with explore option."
+			global errcodep = 1
+			error 198
+		}
+		else {
+			if (`: word count `country''>1) {
+				noi dis as error "One country code in the country() is needed with explore option."
+				global errcodep = 1
+				error 198
+			}
+			//length("`country'")!=3 //check that it is 3 letter string only
+		}
 
 		local loclist country year survname 
 		foreach loc of local loclist {
@@ -103,7 +116,7 @@ program primus_download, rclass
 					}
 					else {
 						if (!inlist("``loc''",``loc'list')) {
-							noi disp in red `"The input on the region() is not correct. Available options are: ``loc'list'."'
+							noi disp in red `"The input on the `loc'() is not correct. Available options are: ``loc'list'."'
 							global errcodep = 198
 							error 198
 						}

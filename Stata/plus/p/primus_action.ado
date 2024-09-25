@@ -55,10 +55,10 @@ program primus_action, rclass
 					primus_api, option(`option') query("tranx=`tranxid'&processid=`processid'&server=${webserver}&Decision=`decision'&Comments=`comments'")								
 					if `primusrc'==0 {
 						return local prmAction "`prmAction'"						
-						return local prmSurveyID "`prmSurveyID'"
-						return local prmTransID "`prmTransID'"
+						return local prmSurveyId "`prmSurveyId'"
+						return local prmTransId "`prmTransId'"
 						
-						noi dis as text in yellow "{p 4 4 2}Transaction ID `prmTransID' for `prmSurveyID' is `decision'(ED), and it is now in `prmAction'.{p_end}"
+						noi dis as text in yellow "{p 4 4 2}Transaction ID `prmTransId' for `prmSurveyId' is `decision'(ED), and it is now in `prmAction'.{p_end}"
 					}
 					else {
 						noi dis as error `"Transaction ID `tranxid' - `prmErrMsg'"'

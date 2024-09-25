@@ -39,12 +39,13 @@ program define primus_message
 	if `error'==814 noi dis "{err}No process is available"	
 	if `error'==815 noi dis "{err}No folders available in this process"	
 	if `error'==816 noi dis "{err}Invalid Survey ID"	
-	if `error'==822 noi dis "{err}Transaction is in DRAFT mode"	
+	if `error'==822 noi dis "{err}Transaction is in COMPLETE mode"	
+	if `error'==823 noi dis "{err}Transaction is in DRAFT mode"	
 	if `error'==825 noi dis "{err}Transaction already Confirmed/Rejected"	
 	if `error'==826 noi dis "{err}Please provide a valid TransactionId"	
 	if `error'==830 noi dis "{err}ProcessId is not valid with the TransactionId"	
 	if `error'==836 noi dis "{err}Operation failed: User lacks Approver role for specified country"	
 	if `error'==842 noi dis "{err}No records available in this Transaction."	
 	if `error'==851 noi dis "{err}Operation failed: Transaction is in Pending status."	
-
+	if `error'==852 noi dis "{err}Operation failed: Transaction is in REJECTED status."	
 end
