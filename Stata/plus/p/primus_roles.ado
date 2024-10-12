@@ -17,7 +17,7 @@
 cap program drop primus_roles
 program primus_roles, rclass
 	version 16.0
-	syntax [anything] PROCessid(string) [, upload download infile(string)] 
+	syntax [anything], PROCessid(string) [ upload download infile(string)] 
 	tempfile primusout
 	
 	if "`upload'"~="" & "`download'"~="" {

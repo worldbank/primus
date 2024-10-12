@@ -17,7 +17,7 @@
 cap program drop primus_download
 program primus_download, rclass
 	version 16.0
-	syntax [anything], [TRANxid(string) FILElist INDicator meta Folders EXPlore PROCessid(string) COUNtry(string) Year(string) SURVname(string)]	
+	syntax [anything], [TRANxid(string) FILElist INDicator meta Folders xml EXPlore PROCessid(string) COUNtry(string) Year(string) SURVname(string) OUTfile(string)]	
 	
 	*global errcodep 0
 	
@@ -30,6 +30,12 @@ program primus_download, rclass
 	
 	if "`filelist'"~="" & "`indicator'"~="" {
 		noi dis as error "One option is allowed: filelist or indicator, not together."
+		global errcodep = 1
+		error 198
+	}
+	
+	if "`xml'"~="" & ("`tranxid'"=="" | "`processid'"=="") {
+		noi dis as error "One transaction ID or processid() is needed with xml() option."
 		global errcodep = 1
 		error 198
 	}
@@ -104,7 +110,7 @@ program primus_download, rclass
 		foreach loc of local loclist {
 			if "``loc''" ~="" {
 				local `loc' `=upper("``loc''")'
-				if "`loc'"=="country" | "`loc'"=="year" | "`loc'"=="tranxid" {
+				if "`loc'"=="country" | "`loc'"=="year" | "`loc'"=="survname" {
 					local `loc' :  subinstr local `loc' " " "", all					
 					local RequestKey `RequestKey'&`loc'=``loc''
 				}
@@ -149,7 +155,19 @@ program primus_download, rclass
 	
 	//Load transactions details of harmonized process and file list in a transaction
 	if "`tranxid'"~="" {
+		local parm_trans tranx
+		if "`indicator'"~="" local option 2a
+		if "`filelist'"~="" local option 2b
+		if "`xml'"~="" {
+			local option 9
+			local parm_trans TransactionId
+		}	
 		if `= wordcount("`tranxid'")' > 1 {
+			if "`xml'"~="" {
+				noi dis as error "One transaction ID is needed with xml() option."
+				global errcodep = 1
+				error 198
+			}
 			local tranxid0
 			foreach tranx of local tranxid {
 				if "`tranxid0'"~=""  local tranxid0 "`tranxid0',`tranx'"
@@ -157,14 +175,24 @@ program primus_download, rclass
 			}
 		}
 		else local tranxid0 `tranxid'
-		if "`indicator'"~="" local option 2a
-		if "`filelist'"~="" local option 2b
 		
-		primus_api, option(`option') query("tranx=`tranxid0'&processid=`processid'&server=${webserver}") outfile(`primusout')
+		*noi dis `"primus_api, option(`option') query("`parm_trans'=`tranxid0'&processid=`processid'&server=${webserver}") outfile(`primusout')"'
+		primus_api, option(`option') query("`parm_trans'=`tranxid0'&processid=`processid'&server=${webserver}") outfile(`primusout')
 		if `primusrc'==0 {
 			cap insheet using "`primusout'", clear
 			if _rc==0 {
-				noi dis as text in yellow "PRIMUS data is loaded in Stata. Browse and see."
+				noi dis as text in yellow "PRIMUS data or xml is loaded in Stata. Browse and see."
+				if "`xml'"~="" & "`outfile'"~="" {					
+					cap copy `primusout' `outfile', replace
+					if _rc==0 {
+						noi dis as text in yellow "XML file is saved in the file `outfile'."
+					}
+					else {
+						noi dis as error "Cannot save the output to the file `outfile'."	
+						global errcodep `=_rc'
+						*error `=_rc'
+					}					
+				}
 			}
 			else {
 				noi dis as error "Unknow error - Unable to load the meta datafile."	
@@ -178,5 +206,4 @@ program primus_download, rclass
 			error 1						
 		}		
 	} //tranxid
-	
 end
