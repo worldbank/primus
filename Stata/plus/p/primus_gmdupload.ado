@@ -482,14 +482,15 @@ program define primus_gmdupload, rclass
 	tempfile upload1
 	local path "`upload1'"
 	
-	local lastslash = strpos("`path'", "\") 
+	local lastslash = strrpos("`path'", "\") 
+	/*
 	while `lastslash' != 0 {
 		local position = `lastslash'
 		local lastslash = strpos("`path'", "\", `position' + 1)
 	}
-
+*/
 	* Extract everything up to the last backslash (if you want the directory part)
-	local dirpath = substr("`path'", 1, `position')
+	local dirpath = substr("`path'", 1, `lastslash')
 
 	use `dataoutfin', clear	
 	char _dta[filename] `filename'
