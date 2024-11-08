@@ -61,479 +61,509 @@ program define primus_gmdupload, rclass
 	- Upload GPWG
 	- Upload ALL
 	*/
-*===============================================================================
-		// 01:Error checks	*===============================================================================	
-	//Split fullname
-	if ("`fullsurveyid'"!="") {
-		local fullsurveyid = trim(upper("`fullsurveyid'"))		
-		tokenize `fullsurveyid', parse("_")
-		local countrycode  = "`1'"
-		local year         = "`3'"
-		local survey       = "`5"
-		local verm 		   = subinstr("`7'","V","",.)
-		local vera         = subinstr("`11'","V","",.)
-		local collection   = "`15'"
-		if ("`17'"!="") local module	= "`17'"			
-		local fullfullsurveyidname 
-	}
-	
-	//Upper case all necessary inputs
-	local uppercase countrycode module survey harmonization collection vermast veralt welfaretype welfshprtype welfareothertype weighttype
-	
-	foreach x of local uppercase {
-		if ("``x''"!="") local `x' = upper(trim("``x''"))
-		local remove1 `remove1' `x'
-	}
-	
-	//...Check for uniqueness, before anything!
-	if ("`pid'"=="") {
-		cap isid `hhid'
-		if (_rc!=0) {
-			dis as error "Data is not unique at `hhid' level, please revise"
-			error 459
-			exit
+	*qui {
+		*===============================================================================
+			// 01:Error checks	
+		*===============================================================================	
+		//Split fullname
+		if ("`fullsurveyid'"!="") {
+			local fullsurveyid = trim(upper("`fullsurveyid'"))		
+			tokenize `fullsurveyid', parse("_")
+			local countrycode  = "`1'"
+			local year         = "`3'"
+			local survey       = "`5"
+			local verm 		   = subinstr("`7'","V","",.)
+			local vera         = subinstr("`11'","V","",.)
+			local collection   = "`15'"
+			if ("`17'"!="") local module	= "`17'"			
+			local fullfullsurveyidname 
 		}
-	}
-	else {
-		cap isid `hhid' `pid'
-		if (_rc!=0) {
-			dis as error "Data is not unique at `hhid' and `pid' level, please revise"
-			error 459
-			exit
-		}	
-	}
-	
-	//Remove vars from othervars
-	local othervariables : list othervariables - remove1
-	local othervariables : list othervariables - welfare
-	local othervariables : list othervariables - weight
-	local othervariables : list othervariables - povweight
-
-	//Collection
-	if ("`collection'"=="") local collection GMD
-	local collection =trim(upper("`collection'"))
-
-	if (inlist("`collection'", "GMD")==0) {
-		dis as error "`collection' is not a valid collection, only GMD is accepted"
-		error 198
-		exit
-	}
-	
-	//Specify module 
-	if ("`module'"=="") {
-		dis as error "You must specify a module, such as ALL, GPWG, BIN, GROUP"
-		error 198
-		exit
-	}
-	local modulelist ALL GPWG BIN GROUP
-	local _modch: list modulelist & module
-	if ("`_modch'"=="") {
-		dis as error "You have specified an unrecognized module"
-		error 198
-		exit
-	}
-	
-*===============================================================================
-		// 02:Check for valid inputs		*===============================================================================
-
-	local flagerr = 0
-	
-	* ICPbase
-	if !inlist(`icpbase', 2005, 2011, 2017, 2021) {
-		noi disp in red "ICPbase variable must be either 2005 or 2011 or 2017 or 2021. Default 2017."
-		local flagerr = 1
-	}
-	else {
-		cap gen icpbase = `icpbase'
-		label var icpbase "ICP reference year `icpbase'"
-	}
 		
-
-	//Country code checks
-	local countrycode = trim(upper("`countrycode'"))
-	if (length("`countrycode'")!=3){
-		display as error "country code must be 3 digit iso country code"
-		local flagerr=1
-	}
-
-	local _thenats AFG ALB DZA ASM AND AGO ATG ARB ARG ARM ABW AUS AUT AZE BHS BHR ///
-	BGD BRB BLR BEL BLZ BEN BMU BTN BOL BIH BWA BRA BRN BGR BFA BDI KHM CMR CAN CPV ///
-	CSS CYM CAF CUW TCD CHI CHL CHN COL COM COD COG CRI CIV HRV CUB CUW CYP CZE DNK ///
-	DJI DMA DOM ECU EGY SLV GNQ ERI EST ETH EUU FRO FJI FIN FRA PYF GAB GMB GEO DEU ///
-	GHA GRC GRL GRD GUM GTM GIN GNB GUY HTI HND HKG HUN ISL IND IDN IRN IRQ IRL IMN ///
-	ISR ITA JAM JPN JOR KAZ KEN KIR PRK KOR KSV KWT KGZ LAO LVA LBN LSO LBR LBY LIE ///
-	LTU LUX MAC MKD MDG MWI MYS MDV MLI MLT MHL MRT MUS MEX FSM MDA MCO MNG MNE MAR ///
-	MOZ MMR NAM NPL NLD NCL NZL NIC NER NGA NRU MNP NOR INX OED OMN OSS PSS PAK PLW PAN ///
-	PNG PRY PER PHL POL PRT PRI QAT ROU RUS RWA WSM SMR STP SAU SEN SRB SYC SLE SGP ///
-	SXM SVK SVN SST SLB SOM ZAF SSD ESP LKA KNA LCA MAF VCT SDN SUR SWZ SWE CHE SYR ///
-	TJK TZA THA TLS TGO TON TTO TUN TUR TKM TCA TUV UGA UKR ARE GBR USA URY UZB VUT ///
-	VEN VNM VIR PSE YEM ZMB ZWE SXM MAF
-
-	local _natcheck: list _thenats & countrycode
-
-	if ("`_natcheck'"=="") { 
-		display as error "Country code not recognized, please provide a valid country code"
-		local flagerr=1
-	}
-	
-	// Year
-	if length("`year'")!=4 {
-		noi di as err "year variable needs to be specified with four digits"
-		local flagerr = 1
-	}
-	
-	//Check provided survey name is valid!
-	preserve
-	primus_vintage, country(`countrycode') svyname
-	local svnamestocheck = r(thesurveys)
-	local _aok: list survey & svnamestocheck
-	local _aok = "`_aok'"!=""
-	restore
-
-	if (`_aok'==0){
-		dis as error "The survey name provided does not exist, talk to central team"
-		error 3699
-		exit
-	}
-	
-	//Welfare type
-	local flag2 = inlist("`welfaretype'", "INC", "CONS", "EXP")
-	if (`flag2' != 1) {
-		noi di as err "eligible welfare types: INC=INCOME; CONS=CONSUMPTION; EXP=EXPENDITURE"
-		local flagerr = 1
-	}
-
-	//Welfare shared prosperity type
-	local flag2 = inlist("`welfshprtype'", "INC", "CONS", "EXP")
-	if (`flag2' != 1) {
-		noi di as err "eligible shared prosperity welfare types: INC=INCOME; CONS=CONSUMPTION; EXP=EXPENDITURE"
-		local flagerr = 1
-	}
-
-	//Welfare other type!
-	if ("`welfareother'" != "") {
-		local flag2 = inlist("`welfareothertype'", "INC", "CONS", "EXP")
-		if (`flag2' != 1) {
-			noi di as err "eligible other welfare types: INC=INCOME; CONS=CONSUMPTION; EXP=EXPENDITURE"
+		//Upper case all necessary inputs
+		local uppercase countrycode module survey harmonization collection vermast veralt welfaretype welfshprtype welfareothertype weighttype	
+		foreach x of local uppercase {
+			if ("``x''"!="") local `x' = upper(trim("``x''"))
+			local remove1 `remove1' `x'
+		}
+		
+		//Check for uniqueness, before anything!
+		if ("`pid'"=="") {
+			cap isid `hhid'
+			if (_rc!=0) {
+				noi dis as error "Data is not unique at `hhid' level, please revise"
+				error 459
+				exit
+			}
+		}
+		else {
+			cap isid `hhid' `pid'
+			if (_rc!=0) {
+				noi dis as error "Data is not unique at `hhid' and `pid' level, please revise"
+				error 459
+				exit
+			}	
+		}
+		
+		//Remove vars from othervars
+		local othervariables : list othervariables - remove1
+		local othervariables : list othervariables - welfare
+		local othervariables : list othervariables - weight
+		local othervariables : list othervariables - povweight
+		
+		//Collection
+		if ("`collection'"=="") local collection GMD
+		else {
+			local collection = trim(upper("`collection'"))
+			if "`collection'"!="GMD" {
+				noi dis as error "`collection' is not a valid collection, only the GMD collection is accepted"
+				error 198
+				exit
+			}
+		}
+		
+		//Specify module 
+		if ("`module'"=="") {
+			noi dis as error "You must specify a module, such as ALL, GPWG, BIN, GROUP, ASPIRE, L, HIST"
+			error 198
+			exit
+		}
+		local modulelist ALL GPWG BIN GROUP ASPIRE HIST L
+		local _modch: list modulelist & module
+		if ("`_modch'"=="") {
+			noi dis as error "You have specified an unrecognized module. Available modules are: ALL GPWG BIN GROUP ASPIRE HIST L"
+			error 198
+			exit
+		}
+		
+		*===============================================================================
+			// 02:Check for valid inputs		
+		*===============================================================================
+		local flagerr = 0
+		
+		* ICPbase
+		if !inlist(`icpbase', 2005, 2011, 2017, 2021) {
+			noi disp in red "ICPbase variable must be either 2005 or 2011 or 2017 or 2021. Default 2017."
 			local flagerr = 1
 		}
-	}
+		else {
+			cap gen icpbase = `icpbase'
+			label var icpbase "ICP reference year `icpbase'"
+		}
+		cap drop cpi`icpbase' 
+		cap drop icp`icpbase'	
+		
+		//Country code checks
+		local countrycode = trim(upper("`countrycode'"))
+		if (length("`countrycode'")!=3){
+			noi display as error "country code must be 3-letter ISO/WB country code"
+			local flagerr=1
+		}
 
-	//Weight type
-	local flag2 = inlist("`weighttype'", "FW", "PW", "AW", "IW")
-	if (`flag2' != 1) {
-		noi di as err "eligible weight types: FW=Frequency weights; PW=Probability weights; AW=Analytical weights; IW=Importance weights"
-		local flagerr = 1
-	}
+		local _thenats AFG ALB DZA ASM AND AGO ATG ARB ARG ARM ABW AUS AUT AZE BHS BHR ///
+		BGD BRB BLR BEL BLZ BEN BMU BTN BOL BIH BWA BRA BRN BGR BFA BDI KHM CMR CAN CPV ///
+		CSS CYM CAF CUW TCD CHI CHL CHN COL COM COD COG CRI CIV HRV CUB CUW CYP CZE DNK ///
+		DJI DMA DOM ECU EGY SLV GNQ ERI EST ETH EUU FRO FJI FIN FRA PYF GAB GMB GEO DEU ///
+		GHA GRC GRL GRD GUM GTM GIN GNB GUY HTI HND HKG HUN ISL IND IDN IRN IRQ IRL IMN ///
+		ISR ITA JAM JPN JOR KAZ KEN KIR PRK KOR KSV KWT KGZ LAO LVA LBN LSO LBR LBY LIE ///
+		LTU LUX MAC MKD MDG MWI MYS MDV MLI MLT MHL MRT MUS MEX FSM MDA MCO MNG MNE MAR ///
+		MOZ MMR NAM NPL NLD NCL NZL NIC NER NGA NRU MNP NOR INX OED OMN OSS PSS PAK PLW PAN ///
+		PNG PRY PER PHL POL PRT PRI QAT ROU RUS RWA WSM SMR STP SAU SEN SRB SYC SLE SGP ///
+		SXM SVK SVN SST SLB SOM ZAF SSD ESP LKA KNA LCA MAF VCT SDN SUR SWZ SWE CHE SYR ///
+		TJK TZA THA TLS TGO TON TTO TUN TUR TKM TCA TUV UGA UKR ARE GBR USA URY UZB VUT ///
+		VEN VNM VIR PSE YEM ZMB ZWE SXM MAF
 
-	//Spatial Deflation
-	if ("`spdef'" != "" & "`subnatid1'" == "") { 
-		noi di as err "Spatial deflator can only be entered if data contain subnational ID. Please check."
-		local flagerr = 1
-	}
-	
-*===============================================================================
-		// 03:Program assigned inputs	*===============================================================================
-	//Region codes
-	preserve
-		dlw_countryname 
-		levelsof region if countrycode=="`countrycode'", local(reg) clean
-		local good1: list sizeof reg
-		if (`good1'!=1) {
-			dis as error "Country code not assigned to a region"
+		local _natcheck: list _thenats & countrycode
+		if ("`_natcheck'"=="") { 
+			noi display as error "Country code not recognized, please provide a valid country code"
+			local flagerr=1
+		}
+		
+		// Year
+		if length("`year'")!=4 {
+			noi di as err "year variable needs to be specified with four digits"
 			local flagerr = 1
 		}
-	restore
-
-	//By var
-	local byvar `level'
-
-	//Pov weight --> If missing -> Weight
-	if ("`povweight'"=="") {
-		local povweight `weight'
-		local no_pweight = 1
-	}
-	else local no_pweight = 0
-
-	//Country name
-	preserve
-		dlw_countryname
-		levelsof countryname if countrycode=="`countrycode'", local(primus_cname)
-	restore
-
-	//Local with all variables in data
-	local varsindata
-	foreach x of varlist * {
-		local varsindata `varsindata' `x'
-	}
-
-	// If level is not specified
-	if "`level'"=="" {
-		cap drop _all_
-		gen _all_ = 1
-		local level2 _all_
-	}
-	else {
-		gen temp = `level'
-		local level2 temp
-	}
-
-	//Weflare primus, if missing
-	if ("`welfare_primus'"=="") local welfare_primus welfare
-
-	//Ref Year, if missing
-	if ("`refyear'"=="") local refyear = `year'
-	
-*===============================================================================
-		// 04:Version control 	*===============================================================================	
-	//Autoversion
-	if ("`autoversion'"!="" & "`collection'"=="GMD") {
+		
+		//Check provided survey name is valid!
 		preserve
-		if (upper("`module'")=="GPWG" | upper("`module'")=="ALL") {
-			local nm = lower("`module'")
-			primus_vintage, country(`countrycode') year(`year') max svy(`survey')
-			
-			if ("`vermast'"=="") local vermast = "`r(maxm)'"
-			local veralt  = "`r(maxa)'" 
+		primus_vintage, country(`countrycode') svyname
+		local svnamestocheck = r(thesurveys)
+		local _aok: list survey & svnamestocheck
+		local _aok = "`_aok'"!=""
+		restore
+
+		if (`_aok'==0) {
+			noi dis as error "The survey name provided does not exist in the DLW system. Please make sure the survey name is in DLW, either in raw data or regional harmonzied collections. Available survey names are `svnamestocheck'."
+			error 3699
+			exit
 		}
-		else { 
-			primus_vintage, country(`countrycode') year(`year') module(`module')
+		
+		//Welfare type
+		local flag2 = inlist("`welfaretype'", "INC", "CONS", "EXP")
+		if (`flag2' != 1) {
+			noi di as err "Eligible welfare types: INC=INCOME; CONS=CONSUMPTION; EXP=EXPENDITURE"
+			local flagerr = 1
+		}
+
+		//Welfare shared prosperity type
+		local flag2 = inlist("`welfshprtype'", "INC", "CONS", "EXP")
+		if (`flag2' != 1) {
+			noi di as err "Eligible shared prosperity welfare types: INC=INCOME; CONS=CONSUMPTION; EXP=EXPENDITURE"
+			local flagerr = 1
+		}
+
+		//Welfare other type!
+		if ("`welfareother'" != "") {
+			local flag2 = inlist("`welfareothertype'", "INC", "CONS", "EXP")
+			if (`flag2' != 1) {
+				noi di as err "Eligible other welfare types: INC=INCOME; CONS=CONSUMPTION; EXP=EXPENDITURE"
+				local flagerr = 1
+			}
+		}
+
+		//Weight type
+		local flag2 = inlist("`weighttype'", "FW", "PW", "AW", "IW")
+		if (`flag2' != 1) {
+			noi di as err "Eligible weight types: FW=Frequency weights; PW=Probability weights; AW=Analytical weights; IW=Importance weights"
+			local flagerr = 1
+		}
+
+		//Spatial Deflation
+		if ("`spdef'" != "" & "`subnatid1'" == "") { 
+			noi di as err "Spatial deflator can only be entered if data contain one subnational ID variable. Please check."
+			local flagerr = 1
+		}
+		
+		*===============================================================================
+			// 03:Program assigned inputs	
+		*===============================================================================
+		//Region codes
+		/*
+		preserve
+			dlw_countryname 
+			levelsof region if countrycode=="`countrycode'", local(reg) clean
+			local good1: list sizeof reg
+			if (`good1'!=1) {
+				dis as error "Country code not assigned to a region"
+				local flagerr = 1
+			}
+		restore
+		*/
+		
+		//By var
+		local byvar `level'
+
+		//Pov weight --> If missing -> Weight
+		if ("`povweight'"=="") {
+			local povweight `weight'
+			local no_pweight = 1
+		}
+		else local no_pweight = 0
+
+		//Country name
+		preserve
+			dlw_countryname
+			levelsof countryname if countrycode=="`countrycode'", local(primus_cname)
+		restore
+
+		//Local with all variables in data
+		local varsindata
+		foreach x of varlist * {
+			local varsindata `varsindata' `x'
+		}
+
+		// If level is not specified
+		if "`level'"=="" {
+			cap drop _all_
+			gen _all_ = 1
+			local level2 _all_
+		}
+		else {
+			gen temp = `level'
+			local level2 temp
+		}
+
+		//Weflare primus, if missing
+		if ("`welfare_primus'"=="") local welfare_primus welfare
+
+		//Ref Year, if missing
+		if ("`refyear'"=="") local refyear = `year'
+		
+		*===============================================================================
+			// 04:Version control 	
+		*===============================================================================	
+		//Autoversion
+		if ("`autoversion'"!="" & "`collection'"=="GMD") {
+			preserve
+			primus_vintage, country(`countrycode') year(`year') svy(`survey') module(`module')
 			if ("`vermast'"=="") local vermast = "`r(newm)'"
 			local veralt  = "`r(newa)'" 
-		}
-		restore
-	}
-	
-	//Version requirements once we have assigned these
-	if length("`vermast'")!=2 & "`fullsurveyid'" == "" { 
-		noi di as err "master version needs to have two digits"
-		local flagerr = 1
-		local _vm=0
-	}
-	else local _vm=1
-
-	if length("`veralt'")!=2 & "`fullsurveyid'" == "" {
-		noi di as err "harmonization version needs to have two digits"
-		local flagerr = 1
-		local _va=0
-	}
-	else local _va = 1
-	
-	//Check if vintages exists
-	if (`_vm'==1 & `_va'==1) {
-		preserve
-			primus_vintage, country(`countrycode') year(`year') svy(`survey')
-			local nm = lower(trim("`module'"))
-			local newyear=r(newy)
-			local _v_a = r(`nm'_a)
-			local _v_m = r(`nm'_m)
-			local _v_a = subinstr("`_v_a'", "V","",.)
-			local _v_a = subinstr("`_v_a'", ".","",.)
-			local _v_m = subinstr("`_v_m'", "V","",.)
-			local _v_m = subinstr("`_v_m'", ".","",.)
-		restore
-		
-		if ("`_v_a'"=="`veralt'" & "`_v_m'"=="`vermast'" & "`newyear'"!="1") {
-			if ("`overwrite'"=="") {
-				noi dis as error "You may not overwrite an existing vintage"
-				local docheck=0
-				local flagerr = 1
-				error 1
+			/*
+			if (upper("`module'")=="GPWG" | upper("`module'")=="ALL") {
+				local nm = lower("`module'")
+				*primus_vintage, country(`countrycode') year(`year') max svy(`survey') module(`module')
+				*if ("`vermast'"=="") local vermast = "`r(maxm)'"
+				*local veralt  = "`r(maxa)'" 
+				
+				primus_vintage, country(`countrycode') year(`year') svy(`survey') module(`module')
+				if ("`vermast'"=="") local vermast = "`r(newm)'"
+				local veralt  = "`r(newa)'" 
 			}
-			else local docheck=1
+			else { 
+				primus_vintage, country(`countrycode') year(`year') module(`module')
+				if ("`vermast'"=="") local vermast = "`r(newm)'"
+				local veralt  = "`r(newa)'" 
+			}
+			*/
+			restore
 		}
-		else {
-			local docheck = 0
+		
+		//Version requirements once we have assigned these
+		if length("`vermast'")!=2 & "`fullsurveyid'" == "" { 
+			noi di as err "master version needs to have two digits"
+			local flagerr = 1
+			local _vm=0
+		}
+		else local _vm=1
+
+		if length("`veralt'")!=2 & "`fullsurveyid'" == "" {
+			noi di as err "harmonization version needs to have two digits"
+			local flagerr = 1
+			local _va=0
+		}
+		else local _va = 1
+		
+		//Check if vintages exists
+		if (`_vm'==1 & `_va'==1) {
+			preserve
+				primus_vintage, country(`countrycode') year(`year') svy(`survey')
+				local nm = lower(trim("`module'"))
+				local newyear=r(newy)
+				local _v_a = r(`nm'_a)
+				local _v_m = r(`nm'_m)
+				local _v_a = subinstr("`_v_a'", "V","",.)
+				local _v_a = subinstr("`_v_a'", ".","",.)
+				local _v_m = subinstr("`_v_m'", "V","",.)
+				local _v_m = subinstr("`_v_m'", ".","",.)
+			restore
+			
+			if ("`_v_a'"=="`veralt'" & "`_v_m'"=="`vermast'" & "`newyear'"!="1") {
+				if ("`overwrite'"=="") {
+					noi dis as error "You may not overwrite an existing vintage"
+					local docheck=0
+					local flagerr = 1
+					error 1
+				}
+				else local docheck=1
+			}
+			else {
+				local docheck = 0
+			}	
+		} //vm va
+		
+		//Full name and components
+		if ("`fullsurveyid'" == "") & (("`survey'" == "") | ("`vermast'" == "")) & (("`harmonization'" == "") | ("`veralt'" == "")) {
+			noi di as err "Either full name or name components have to be specified. Please check."
+			local flagerr = 1
+		}
+		
+		//Variable checks
+		if "`module'"=="GPWG" {
+			_primus_gmdcheck_gpwg, varsindata(`varsindata')
+			local nerr = r(nerror)
+			local flagerr = r(flagerr)
 		}	
-	} //vm va
-	
-	//Full name and components
-	if ("`fullsurveyid'" == "") & (("`survey'" == "") | ("`vermast'" == "")) & (("`harmonization'" == "") | ("`veralt'" == "")) {
-		noi di as err "Either full name or name components have to be specified. Please check."
-		local flagerr = 1
-	}
-	
-	//Variable checks
-	if "`module'"=="GPWG" {
-		_primus_gmdcheck_gpwg, varsindata(`varsindata')
-		local nerr = r(nerror)
-		local flagerr = r(flagerr)
-	}
-	if "`module'"=="ALL" {
-		_primus_gmdcheck_all, varsindata(`varsindata')
-		local nerr = r(nerror)
-		local flagerr = r(flagerr)
-	}	
-	*local nerr = r(nerror)
-	*local flagerr = r(flagerr)
-	
-	if (`flagerr' == 1) {
-		noi disp _n(2) as err "There is at least one irreconcilable error (`nerr' errors) in the " ///
-			"dataset. Data not uploaded."
-		error 1
-		exit
-	}
-	
-	*===============================================================================
-		// 9) Return list and Data Signature		
-	*===============================================================================
-	local filename = "`countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`collection'_`module'.dta"
-	if "`module'"=="ALL" local filenameGPWG = "`countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`collection'_GPWG.dta"
-	local foldername = "`countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`collection'"
-	return local foldername = "`foldername'"
-	return local filename = "`filename'"
-	datasignature		
-	local datasig = r(datasignature)
-	
-	*===============================================================================
-		// 10) Notes
-	*===============================================================================
-	local date : di %tdN/D/CY date("$S_DATE", "DMY")
-	local username = c(username)
-
-	if ("`harmonization'"=="NA") {
-		note: `date', $S_TIME, `reg', `countrycode', `year', `survey', `harmonization', `username', `countrycode'_`year'_`survey'_V`vermast'_M_`collection', `replace', `surveylevel', `restricted', `savepath' `datasig'
-	}
-	else {
-		note: `date', $S_TIME, `reg', `countrycode', `year', `survey', `harmonization', `username', `countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`harmonization'_`collection', `replace', `surveylevel', `restricted', `savepath' `datasig'
-	}
-
-	note `if'
-	note `in'
-	note `note'
-
-	// extract notes as local to save in external files
-	local i=1
-	qui while `i'!=. {
-		if `"`_dta[note`i']'"' != "" {
-			di `"`i'. `_dta[note`i']'"'
-			local i = `i' + 1
+		else if "`module'"=="ALL" {
+			_primus_gmdcheck_all, varsindata(`varsindata')
+			local nerr = r(nerror)
+			local flagerr = r(flagerr)
+		}		
+		else if "`module'"=="BIN" {
+			_primus_gmdcheck_bin, varsindata(`varsindata')
+			local nerr = r(nerror)
+			local flagerr = r(flagerr)
+		}	
+		else if "`module'"=="GROUP" {
+			_primus_gmdcheck_group, varsindata(`varsindata')
+			local nerr = r(nerror)
+			local flagerr = r(flagerr)
 		}
 		else {
-			local i = .
+			noi dis "No check is done for this module `module'"
 		}
-	}
-	cap drop __00*
-	tempfile dataoutfin
-	save `dataoutfin', replace
-	
-	//Price database!
-	cap datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(`pfwid') filename(Final_CPI_PPP_to_be_used.dta) clear files
-	di r(cmdline)
-	local priceproblem=_rc
-	if (`priceproblem'==111|`priceproblem'==0) {
-		cap keep if upper(code)==upper("`countrycode'")
-		if (_rc) keep if upper(countrycode)==upper("`countrycode'")
-		tempfile cpi_
-		save `cpi_'
-	}
-	else {
-		dis as error "Unable to load CPI ICP database"
-		error 1
-		exit
-	}
-	
-	//merge CPI in from the system
-	use `dataoutfin', clear
-	qui if strpos("`survey''","EU-SILC")>0 replace year = year - 1				//EUSILC year
-	qui if "`=upper("`countrycode'")'"=="CHN" | "`=upper("`countrycode'")'"=="IND"  gen datalevel = urban						
-	else gen datalevel = 2	
-	gen survname = "`survey'"
-	merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(cpi`icpbase' icp`icpbase')
-	qui drop if _mcpi==2		
-	qui drop _mcpi
-	cap drop datalevel 
-	cap drop ppp_note
-	qui if strpos("$surveyid","EU-SILC")>0 replace year = year + 1				//EUSILC year
-	save `dataoutfin', replace
-
-	*===============================================================================
-		// 12) XML preperation 	
-	*===============================================================================
 		
-	//load survey metadata
-	primus_pfwdata, code(`countrycode') year(`year') survey(`survey') pfwid(`pfwid')	
-	local pricevars `r(_pricevars)'
-	
-	use `dataoutfin', clear
-	foreach price of local pricevars {
-		char _dta[`price'] `r(_`price')'
-		local `price' `r(_`price')'
-	}
-	save `dataoutfin', replace
-	
-	//xml prep
-	tempfile xmlout1
-	primus_xml, welflist(`welfare') weightlist(`povweight') xmlout(`xmlout1') ///
-		country(`countrycode') year(`year') surveyid(`foldername') pppyear(`icpbase') ///
-		refyear(`refyear') filename(`filename') ///
-		pfwid(`pfwid') byvar(`byvar')
-
-	*===============================================================================
-		// 12) Send to Primus Up command
-	*===============================================================================
-	
-	//upload xml			
-	dis `"primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) infile(`xmlout1') xmlbl new"'
-	primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) infile(`xmlout1') xmlbl new
-	local prmTransID = r(prmTransID)
-	
-	//prep path/filename to be uploaded
-	tempfile upload1
-	local path "`upload1'"
-	
-	local lastslash = strrpos("`path'", "\") 
-	/*
-	while `lastslash' != 0 {
-		local position = `lastslash'
-		local lastslash = strpos("`path'", "\", `position' + 1)
-	}
-*/
-	* Extract everything up to the last backslash (if you want the directory part)
-	local dirpath = substr("`path'", 1, `lastslash')
-
-	use `dataoutfin', clear	
-	char _dta[filename] `filename'
-	char _dta[tranxid] `prmTransID'
-	saveold "`dirpath'\\`filename'", replace
-		
-	if "`module'"~="ALL" {
-		//upload data the module defined (GPWG, BIN, GROUP)
-		dis `"primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxID(`prmTransID')"'
-		primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxID(`prmTransID')
-		return list
-		rm "`dirpath'\\`filename'"
-	}
-	else { //when it is ALL
-		//upload ALL
-		primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxID(`prmTransID')
-		return list
-		rm "`dirpath'\\`filename'"
-		
-		//Split, save the file, and upload
-		use `dataoutfin', clear		
-		cap ren gaul_adm1 gaul_adm1_code
-		cap ren gaul_adm2 gaul_adm2_code
-		cap ren gaul_adm3 gaul_adm3_code	
-		local check age male urban hsize welfarenom welfareother welfareothertype welfaredef welfshprosperity gaul_adm1_code gaul_adm2_code gaul_adm3_code gaul_adm1 gaul_adm2 gaul_adm3 subnatid subnatid1 subnatid2 subnatid3 subnatidsurvey
-		local oklist
-		foreach var of local check {
-			cap des `var'
-			if _rc==0 local oklist "`oklist' `var'"
+		if (`flagerr' == 1) {
+			noi disp _n(2) as err "There is at least one irreconcilable error (`nerr' errors) in the dataset. Data not uploaded."
+			error 1
+			exit
 		}
-		cap drop weight
-		cap des weight_p
-		if _rc==0 ren weight_p weight
-		keep countrycode year hhid pid welfare welfare* weight `oklist' 					
-		char _dta[filename] `filenameGPWG'
+		
+		*===============================================================================
+			// 9) Return list and Data Signature		
+		*===============================================================================
+		local filename = "`countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`collection'_`module'.dta"
+		if "`module'"=="ALL" local filenameGPWG = "`countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`collection'_GPWG.dta"
+		local foldername = "`countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`collection'"
+		return local foldername = "`foldername'"
+		return local filename = "`filename'"
+		datasignature		
+		local datasig = r(datasignature)
+		
+		*===============================================================================
+			// 10) Notes
+		*===============================================================================
+		local date : di %tdN/D/CY date("$S_DATE", "DMY")
+		local username = c(username)
+
+		if ("`harmonization'"=="NA") {
+			note: `date', $S_TIME, `reg', `countrycode', `year', `survey', `harmonization', `username', `countrycode'_`year'_`survey'_V`vermast'_M_`collection', `replace', `surveylevel', `restricted', `savepath' `datasig'
+		}
+		else {
+			note: `date', $S_TIME, `reg', `countrycode', `year', `survey', `harmonization', `username', `countrycode'_`year'_`survey'_V`vermast'_M_V`veralt'_A_`harmonization'_`collection', `replace', `surveylevel', `restricted', `savepath' `datasig'
+		}
+
+		*note `if'
+		*note `in'
+		*note `note'
+
+		// extract notes as local to save in external files
+		/*
+		local i=1
+		qui while `i'!=. {
+			if `"`_dta[note`i']'"' != "" {
+				di `"`i'. `_dta[note`i']'"'
+				local i = `i' + 1
+			}
+			else {
+				local i = .
+			}
+		}
+		*/
+		cap drop __00*
+		tempfile dataoutfin
+		save `dataoutfin', replace
+		
+		//Price database!
+		*cap datalibweb, country(Support) year(2005) type(GMDRAW) surveyid(`pfwid') filename(Final_CPI_PPP_to_be_used.dta) clear files
+		*di r(cmdline)
+		*local priceproblem=_rc
+		*if (`priceproblem'==0) {
+		cap datalibweb, country(support) year(2005) type(GMDRAW) surveyid(`pfwid') filename(Final_CPI_PPP_to_be_used.dta) clear files
+		if (_rc==0) {
+			cap keep if upper(code)==upper("`countrycode'")
+			*if (_rc) keep if upper(countrycode)==upper("`countrycode'")
+			tempfile cpi_
+			save `cpi_'
+		}
+		else {
+			dis as error "Unable to load CPI ICP database"
+			error 1
+			exit
+		}
+		
+		//merge CPI in from the system
+		use `dataoutfin', clear
+		qui if strpos("`survey''","EU-SILC")>0 replace year = year - 1				//EUSILC year
+		qui if "`=upper("`countrycode'")'"=="CHN" | "`=upper("`countrycode'")'"=="IND"  gen datalevel = urban						
+		else gen datalevel = 2	
+		gen survname = "`survey'"
+		merge m:1 code year datalevel survname using `cpi_', gen(_mcpi) keepus(cpi`icpbase' icp`icpbase')
+		qui drop if _mcpi==2		
+		qui drop _mcpi
+		cap drop datalevel 
+		cap drop ppp_note
+		qui if strpos("$surveyid","EU-SILC")>0 replace year = year + 1				//EUSILC year
+		save `dataoutfin', replace
+
+		*===============================================================================
+			// 12) XML preperation 	
+		*===============================================================================
+			
+		//load survey metadata
+		primus_pfwdata, code(`countrycode') year(`year') survey(`survey') pfwid(`pfwid')	
+		local pricevars `r(_pricevars)'
+		
+		use `dataoutfin', clear
+		foreach price of local pricevars {
+			char _dta[`price'] `r(_`price')'
+			local `price' `r(_`price')'
+		}
+		save `dataoutfin', replace
+		
+		//xml prep
+		tempfile xmlout1
+		local pathxml "`xmlout1'"		
+		local lastslash = strrpos("`pathxml'", "\") 				
+		local dirpath = substr("`pathxml'", 1, `lastslash')
+			
+		primus_xml, welflist(`welfare') weightlist(`povweight') xmlout(`xmlout1') ///
+			country(`countrycode') year(`year') surveyid(`foldername') pppyear(`icpbase') ///
+			refyear(`refyear') filename(`filename') ///
+			pfwid(`pfwid') byvar(`byvar')
+		
+		copy `xmlout1' "`dirpath'\\`foldername'.xml", replace
+		
+		*===============================================================================
+			// 12) Send to Primus Up command
+		*===============================================================================
+		
+		//upload xml			
+		noi dis `"primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) infile("`dirpath'\\`foldername'.xml") xmlbl new"'
+		primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) infile("`dirpath'\\`foldername'.xml") xmlbl new
+		local prmTransID = r(prmTransId)
+		
+		rm "`dirpath'\\`foldername'.xml"
+		
+		//prep path/filename to be uploaded
+		tempfile upload1
+		*local path "`upload1'"
+		*local lastslash = strrpos("`path'", "\") 	
+		* Extract everything up to the last backslash (if you want the directory part)
+		*local dirpath = substr("`path'", 1, `lastslash')
+
+		use `dataoutfin', clear	
+		char _dta[filename] `filename'
 		char _dta[tranxid] `prmTransID'
-		
-		saveold "`dirpath'\\`filenameGPWG'", replace
-		
-		*primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filenameGPWG'") tranxID(`prmTransID')
-		return list
-		rm "`dirpath'\\`filenameGPWG'"
-	}
+		saveold "`dirpath'\\`filename'", replace
+			
+		if "`module'"~="ALL" {
+			//upload data the module defined (GPWG, BIN, GROUP)
+			noi dis `"primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxID(`prmTransID')"'
+			primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxid(`prmTransID')
+			return list
+			rm "`dirpath'\\`filename'"
+		}
+		else { //when it is ALL
+			//upload ALL
+			primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxid(`prmTransID')
+			return list
+			rm "`dirpath'\\`filename'"
+			
+			//Split, save the file, and upload
+			use `dataoutfin', clear		
+			cap ren gaul_adm1 gaul_adm1_code
+			cap ren gaul_adm2 gaul_adm2_code
+			cap ren gaul_adm3 gaul_adm3_code	
+			local check age male urban hsize welfarenom welfareother welfareothertype welfaredef welfshprosperity gaul_adm1_code gaul_adm2_code gaul_adm3_code gaul_adm1 gaul_adm2 gaul_adm3 subnatid subnatid1 subnatid2 subnatid3 subnatidsurvey
+			local oklist
+			foreach var of local check {
+				cap des `var'
+				if _rc==0 local oklist "`oklist' `var'"
+			}
+			cap drop weight
+			cap des weight_p
+			if _rc==0 ren weight_p weight
+			keep code year hhid pid welfare welfare* weight `oklist' 					
+			char _dta[filename] `filenameGPWG'
+			char _dta[tranxid] `prmTransID'
+			
+			saveold "`dirpath'\\`filenameGPWG'", replace
+			
+			primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filenameGPWG'") tranxid(`prmTransID')
+			return list
+			rm "`dirpath'\\`filenameGPWG'"
+		}
+	*} //qui
 end
 
 //Subprogram on checking contents of variables
@@ -541,130 +571,55 @@ cap program drop _primus_gmdcheck_gpwg
 program define _primus_gmdcheck_gpwg, rclass
 	syntax [if] [in] , [varsindata(string) ]
 	local cnt = 0
-	local gpwgvars `welfare' `weight' `age' `male' `urban' `hhid' `hsize' `cpi' ///
-				`ppp' `strata' `psu' `time' `welfshprosperity' `othervariables' ///
-				`subnatid1' `spdef' `converfactor' `povweight'
-				
-	local varstodrop: list varsindata - gpwgvars
-	if ("`varstodrop'" != "") noi disp in red _n "Caution: " in y ///
-				"the following variables in your dataset wont be included" ///
-				" in the `collection' collection:" _n _col(6) in w "`varstodrop'"
-				
-	keep `welfare' `weight' `age' `male' `urban' `hhid' `hsize' `cpi' ///
-				`ppp' `strata' `psu' `time' `welfshprosperity' `othervariables' ///
-				`subnatid1' `spdef' `converfactor' `povweight' `pid'			
-				
-	**************************************************
-	/* select and rename variables */
-	**************************************************
-	cap clonevar pp_welfare                =`welfare' 
-	cap clonevar pp_welfarenom             =`welfarenom' 
-	cap clonevar pp_welfaredef             =`welfaredef' 
-	cap clonevar pp_welfareother           =`welfareother'
-	cap clonevar pp_weight_h               =`weight' 
-	cap clonevar pp_weight_p               =`povweight'
-	cap clonevar pp_age                    =`age'
-	cap clonevar pp_male                   =`male'
-	cap clonevar pp_urban                  =`urban'
-	cap clonevar pp_hsize                  =`hsize'
-	cap clonevar pp_hhid                   =`hhid'
-	cap clonevar pp_cpi                    =`cpi'
-	cap clonevar pp_ppp                    =`ppp'
-	cap clonevar pp_strata                 =`strata'
-	cap clonevar pp_psu                    =`psu'
-	cap clonevar pp_welfshprosperity       =`welfshprosperity'
-	cap clonevar pp_subnatid1              =`subnatid1'
-	cap clonevar pp_spdef                  =`spdef'
-	cap clonevar pp_converfactor           =`converfactor'
 	
-	local myvardrop `welfare' `welfarenom' `welfaredef' `welfareother' ///
-		`weight' `age' `male' `urban' `hsize' `hhid' `cpi'    ///
-		`ppp' `strata' `psu' `welfshprosperity' `subnatid1'   ///
-		`spdef' `converfactor'
-		
-	foreach V of local myvardrop {
-		cap drop `V'
-	}
-	cap drop `povweight'
-	renpfix pp_
-	
-	cap drop countrycode
-	cap drop year
-	
-	cap gen countrycode = upper("`countrycode'")
-	cap gen year = `year'
-	cap gen welfaretype = upper("`welfaretype'")
-	cap gen welfshprtype = upper("`welfshprtype'")
-	
-	if ("`welfareothertype'" != "") cap gen welfareothertype = upper("`welfareothertype'")
-	
-	cap gen weighttype	= upper("`weighttype'")
-	cap gen cpiperiod	= "`cpiperiod'"
-	
-	cap gen survey = "`survey'"
-	cap gen vermast = "`vermast'"
-	cap gen veralt = "`veralt'"
-	cap gen harmonization = "`harmonization'"
-	
-	cap label var countrycode "WDI three letter country codes "
-	cap label var year "4 digit year of the survey"
-	cap label var spdef "Spatial deflator (if one is used)"
-	cap label var weight_h "Weight"
-	cap label var weight_p "Weight for poverty calculation"
-	cap label var weighttype "Weight type (frequency, probability, analytical, importance)"
-	cap label var cpi "CPI ratio value of survey (rebased to `icpbase' on base 1)"
-	cap label var cpiperiod "Periodicity of CPI (year, year&month, year&quarter, weighted)"
-	cap label var ppp "PPP conversion factor. (`icpbase')"
-	cap label var survey "Type of survey"
-	cap label var vermast "Version number of master data file"
-	cap label var veralt "Version number of adaptation to the master data file"
-	cap label var harmonization "Type of harmonization"
-	cap label var converfactor "Conversion factor"
-	cap label var subnatid1 "Subnational ID - highest level"
-	cap label var subnatid2 "Subnational ID - second highest level"
-	cap label var subnatid3 "Subnational ID - third highest level"
-	cap label var strata "Strata"
-	cap label var psu "PSU"
-	cap label var welfare "Welfare aggregate used for estimating international poverty (provided to PovcalNet)"
-	cap label var welfarenom "Welfare aggregate in nominal terms"
-	cap label var welfaredef "Welfare aggregate spatially deflated"
-	cap label var welfaretype "Type of welfare measure (income, consumption or expenditure) for welfare, welfarenom, welfaredef"
-	cap label var welfshprosperity "Welfare aggregate for shared prosperity (if different from poverty)"
-	cap label var welfshprtype "Welfare type for shared prosperity indicator (income, consumption or expenditure)"
-	cap label var welfareother "Welfare aggregate if different welfare type is used from welfare, welfarenom, welfaredef"
-	cap label var welfareothertype "Type of welfare measure (income, consumption or expenditure) for welfareother"
-	cap label var hsize "Household size"
-	cap label var hhid "Household ID"
+	local checkvars age male urban hsize welfarenom welfareother welfareothertype welfaredef welfshprosperity gaul_adm1_code gaul_adm2_code gaul_adm3_code gaul_adm1 gaul_adm2 gaul_adm3 subnatid1 subnatid2 subnatid3 subnatidsurvey
+					
+	noi disp "" _n				
+	foreach checkvar of local checkvars {
+		cap confirm var `checkvar'
+		if _rc {
+			noi disp as err "Caution:" in y " variable" in w " `checkvar' " in y "not found in dataset"
+			*gen `checkvar' = .
+			local check`checkvar' = 0
+		}
+		else {
+			local check`checkvar' = 1
+		}
+	} // end of checkvars loop
+	noi disp "" _n
 	
 	**************************************************
 		/* Value labels values */
 	**************************************************
-	cap levelsof male, local(ckmale)
-	if regexm("0 1","`ckmale'") { 
-		cap lab define male 1 Male 0 Female, modify
-		cap lab values male male
-	}
-	else {
-		if "`male'"!="" {
+	//male
+	if (`checkmale' == 1) {
+		cap levelsof male, local(ckmale)
+		if regexm("0 1","`ckmale'") { 
+			cap lab define male 1 Male 0 Female, modify
+			cap lab values male male
+		}
+		else {
 			local cnt = `cnt' + 1
 			noi di as err "Error `cnt': male variable [`male'] has values other than 0 and 1 (i.e. male=1, female=0), please check."
 			local flagerr = 1			
 		}
 	}
 	
-	cap levelsof urban, local(ckurban)
-	if regexm("0 1","`ckurban'") { 
-		cap lab define urban 1 Urban 0 Rural, modify
-		cap lab values urban urban
-	}
-	else {
-		if "`urban'"!="" {
+	//urban
+	if (`checkurban' == 1) {
+		cap levelsof urban, local(ckurban)
+		if regexm("0 1","`ckurban'") { 
+			cap lab define urban 1 Urban 0 Rural, modify
+			cap lab values urban urban
+		}
+		else {
 			local cnt = `cnt' + 1
 			noi di as err "Error `cnt': urban variable [`urban'] has values other than 0 and 1 (i.e. urban=1, rural=0), please check."
 			local flagerr = 1
 		}
 	}
 	
+	//Numeric variables
 	local nums welfare weight age hsize
 	foreach x of local nums {
 		cap confirm var ``x''
@@ -678,36 +633,84 @@ program define _primus_gmdcheck_gpwg, rclass
 	
 	if ("`notnum'"!="") {
 		local cnt = `cnt' + 1
-		dis as err "Error `cnt': The following variables should be numeric:" ///
-		_n _col(6) in w "`notnum'"
+		dis as err "Error `cnt': The following variables should be numeric:" _n _col(6) in w "`notnum'"
 		local flagerr=1
 	}
 	
-	if ("`subnatid1'" != "") {	
-		capture confirm string var subnatid1
-		if (_rc) { 
-			local cnt = `cnt' + 1
-			noi di as err "Error `cnt': Subnatid1 was not correctly specified. Please, make sure that the following naming convention (string) is used: # – String"
-			local flagerr =1
+	//Subnat id checks...need to add shapefile codes
+	forval z=1/3 {			
+		if (`checksubnatid`z''==1) {	
+			capture confirm string var subnatid`z'
+			if (_rc) { 
+				local cnt = `cnt' + 1
+				noi di as err "Error `cnt': Subnatid`z' was not correctly specified. Please, make sure that the following naming convention (string) is used: # – String"
+				local flagerr =1
+			}
+			cap levelsof subnatid`z', local(mysub)
+			local mysub1: list sizeof mysub		
+			if (`mysub1'==1 & `"`mysub'"'!="`"."'") {
+				local cnt = `cnt' + 1
+				noi dis as err "Error `cnt': Subnatid`z' is constant for all entries, please revise"
+				local flagerr =1
+			}				
+		}			
+	}
+
+	/* Age */
+	* GMD 2.0 allows age to be a decimal for individuals <5 yrs
+	if (`checkage' == 1) {
+		cap assert missing(age)
+		if _rc!=0 {		
+			* integers for individuals older than 5 yrs
+			cap assert age == int(age) if age>5
+			if _rc {
+				local cnt = `cnt' + 1
+				noi disp as err "Error `cnt': age must be integers only for age >5 yrs. Please check!"
+				local flagerr = 1
+			}
+			
+			cap assert age >= 0 		// check age is positive or missing
+			if _rc {
+				local cnt = `cnt' + 1
+				noi disp as err "Error `cnt': age cannot have negative values"
+				local flagerr = 1
+			}
 		}
-		cap levelsof subnatid1, local(mysub)
-		local mysub: list sizeof mysub		
-		if (`mysub'==1) {
-			local cnt = `cnt' + 1
-			noi dis as err "Error `cnt' :Subnatid1 is constant for all entries, please revise"
-			local flagerr =1
-		}	
 	}
 	
-	if ("`spdef'" != "") {
-		qui sum spdef
-		local var2spdef = r(Var)
-		if (`var2spdef' == 0) /*& (("`bypass'" != ""))*/ {
-			local cnt = `cnt' + 1
-			noi di as err "Error `cnt': Spatial deflator is constant for all entries. Please check."
-			local flagerr = 1
-		}
-	}
+	cap label var countrycode "WDI three letter country codes "
+	cap label var year "4 digit year of the survey"
+	cap label var spdef "Spatial deflator (if one is used)"	
+	cap label var weight "Weight for poverty calculation"
+	cap label var weighttype "Weight type (frequency, probability, analytical, importance)"	
+	cap label var cpiperiod "Periodicity of CPI (year, year&month, year&quarter, weighted)"	
+	cap label var survey "Type of survey"
+	cap label var vermast "Version number of master data file"
+	cap label var veralt "Version number of adaptation to the master data file"
+	cap label var harmonization "Type of harmonization"
+	cap label var converfactor "Conversion factor"
+	cap label var subnatid1 "Subnational ID - highest level"
+	cap label var subnatid2 "Subnational ID - second highest level"
+	cap label var subnatid3 "Subnational ID - third highest level"
+	cap label var subnatidsurvey "Survey representation of geographical units"
+	cap label var strata "Strata"
+	cap label var psu "PSU"
+	cap label var welfare "Welfare aggregate used for estimating international poverty (provided to PovcalNet)"
+	cap label var welfarenom "Welfare aggregate in nominal terms"
+	cap label var welfaredef "Welfare aggregate spatially deflated"
+	cap label var welfaretype "Type of welfare measure (income, consumption or expenditure) for welfare, welfarenom, welfaredef"
+	cap label var welfshprosperity "Welfare aggregate for shared prosperity (if different from poverty)"
+	cap label var welfshprtype "Welfare type for shared prosperity indicator (income, consumption or expenditure)"
+	cap label var welfareother "Welfare aggregate if different welfare type is used from welfare, welfarenom, welfaredef"
+	cap label var welfareothertype "Type of welfare measure (income, consumption or expenditure) for welfareother"
+	cap label var hsize "Household size"
+	cap label var hhid "Household ID"	
+	cap label var pid "Individual identifier"
+	cap label var urban "Urban (1) or rural (0)"
+	cap label var age "Age of individual (continuous)"
+	cap label var agecat "Age of individual (categorical)"
+	cap label var male "Sex of household member (male=1)"
+	
 	local return nerror `cnt'
 	local return flagerr `flagerr'
 end
@@ -744,14 +747,14 @@ program define _primus_gmdcheck_all, rclass
 	
 	/*pid*/
 	if (`checkpid' == 1 & !missing(pid)) {
-		sort countrycode year hhid pid
-		duplicates report countrycode year hhid pid
+		sort code year hhid pid
+		duplicates report code year hhid pid
 		cap assert r(unique_value) == r(N)
 		if ("`pid'" != "") {
 			if _rc {
 				local cnt = `cnt' + 1
 				noi disp as err "Error `cnt': variable pid is not unique for combination household/individual." ///
-				_n "{stata duplicates example countrycode year hhid pid: click here}" ///
+				_n "{stata duplicates example code year hhid pid: click here}" ///
 				" to see examples of duplicated obs."
 				local flagerr = 1
 			}
@@ -795,7 +798,7 @@ program define _primus_gmdcheck_all, rclass
 			}
 					
 			** check only one head per household
-			sort countrycode year hhid relationharm
+			sort code year hhid relationharm
 			tempvar nhh 		// number of head of the household
 			bysort hhid: egen `nhh' = total(relationharm == 1)
 			cap assert `nhh' == 1 | `nhh' == 0
@@ -1034,6 +1037,7 @@ program define _primus_gmdcheck_all, rclass
 	}
 	
 	cap label var countrycode "WDI three letter country codes "
+	cap label var code "WDI three letter country codes "
 	cap label var year "4 digit year of the survey"
 	cap label var spdef "Spatial deflator (if one is used)"
 	cap label var weight_h "Individual weights"
@@ -1050,6 +1054,7 @@ program define _primus_gmdcheck_all, rclass
 	cap label var subnatid1 "Subnational ID - highest level"
 	cap label var subnatid2 "Subnational ID - second highest level"
 	cap label var subnatid3 "Subnational ID - third highest level"
+	cap label var subnatidsurvey "Survey representation of geographical units"
 	cap label var strata "Strata"
 	cap label var psu "PSU"
 	cap label var welfare "Welfare aggregate used for estimating international poverty (provided to PovcalNet)"
@@ -1093,10 +1098,100 @@ end
 
 cap program drop _primus_gmdcheck_bin
 program define _primus_gmdcheck_bin, rclass
-
+	syntax [if] [in] , [varsindata(string) ]
+	local cnt = 0
+	
+	local checkvars code year bins welfare weight share
+					
+	noi disp "" _n				
+	foreach checkvar of local checkvars {
+		cap confirm var `checkvar'
+		if _rc {
+			noi disp as err "Caution:" in y " variable" in w " `checkvar' " in y "not found in dataset"
+			*gen `checkvar' = .
+			local check`checkvar' = 0
+		}
+		else {
+			local check`checkvar' = 1
+		}
+	} // end of checkvars loop
+	noi disp "" _n
+	
+	//Numeric variables
+	local nums year bins welfare weight share
+	foreach x of local nums {
+		cap confirm var ``x''
+		local is = _rc==0
+		if (`is'==1) {
+			cap confirm numeric variable ``x'', exact
+			local is1 = _rc==0
+			if (`is1'==0)	local notnum `notnum' ``x''		
+		}
+	}
+	
+	if ("`notnum'"!="") {
+		local cnt = `cnt' + 1
+		dis as err "Error `cnt': The following variables should be numeric:" _n _col(6) in w "`notnum'"
+		local flagerr=1
+	}
+	
+	cap label var code "WDI three letter country codes "
+	cap label var year "4 digit year of the survey or reference year"
+	cap label var bins "Data bins"
+	cap label var welfare "Annual per capita welfare with the THEN currency"
+	cap label var weight "Weight"
+	cap label var share "Bin share"
+	
+	local return nerror `cnt'
+	local return flagerr `flagerr'
 end
 
 cap program drop _primus_gmdcheck_group
 program define _primus_gmdcheck_group, rclass
-
+	syntax [if] [in] , [varsindata(string) ]
+	local cnt = 0
+	
+	local checkvars welfare weight gd_type welfare_type code year
+					
+	noi disp "" _n				
+	foreach checkvar of local checkvars {
+		cap confirm var `checkvar'
+		if _rc {
+			noi disp as err "Caution:" in y " variable" in w " `checkvar' " in y "not found in dataset"
+			*gen `checkvar' = .
+			local check`checkvar' = 0
+		}
+		else {
+			local check`checkvar' = 1
+		}
+	} // end of checkvars loop
+	noi disp "" _n
+	
+	//Numeric variables
+	local nums year welfare weight 
+	foreach x of local nums {
+		cap confirm var ``x''
+		local is = _rc==0
+		if (`is'==1) {
+			cap confirm numeric variable ``x'', exact
+			local is1 = _rc==0
+			if (`is1'==0)	local notnum `notnum' ``x''		
+		}
+	}
+	
+	if ("`notnum'"!="") {
+		local cnt = `cnt' + 1
+		dis as err "Error `cnt': The following variables should be numeric:" _n _col(6) in w "`notnum'"
+		local flagerr=1
+	}
+	
+	cap label var code "WDI three letter country codes "
+	cap label var year "4 digit year of the survey or reference year"
+	cap label var gd_type "Group data type"
+	cap label var welfare_type "Welfare type"
+	cap label var welfare "Annual per capita welfare with the THEN currency"
+	cap label var weight "Weight"
+	
+	local return nerror `cnt'
+	local return flagerr `flagerr'
 end

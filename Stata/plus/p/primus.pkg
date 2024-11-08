@@ -1,24 +1,35 @@
-v 0.0.0.9000
+v 0.0.1.1000
 d 'PRIMUS': PRIMUS
 d 
 d The Primus ado files for Stata in this GitHub repo are a critical component of this process. These allow for data sharing and file upload service that ensures that estimations are based on identical source data.
 d 
-d Distribution-Date:   20201119
+d Distribution-Date:   20241119
 d License: MIT
 d 
-F Primus32.dll
-F Primus64.dll
+F Primus2_32.dll
+F Primus2_64.dll
 F primus.ado
 F primus.sthlp
 F primus_action.ado
 F primus_action.sthlp
+F primus_api.ado
 F primus_check.ado
 F primus_download.ado
 F primus_download.sthlp
+F primus_gmdupload.ado
 F primus_message.ado
+F primus_pfwdata.ado
 F primus_query.ado
 F primus_query.sthlp
+F primus_roles.ado
+F primus_register.ado
 F primus_up.ado
 F primus_upload.ado
 F primus_upload.sthlp
 F primus_vintage.ado
+F primus_xml.ado
+
+
+
+
+

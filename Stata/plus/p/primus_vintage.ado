@@ -28,6 +28,8 @@ program define primus_vintage, rclass
 	if "`server'"=="" local server GMD
 	if "`collection'"=="" local collection GMD
 	
+	if "`collection'"=="GMD" & "`module'"=="" local module GPWG
+	
 	local opt 
 	if ("`wrk'"!="") local opt wrkvintage
 	if ("`all'"!="") local opt allvintages
@@ -128,7 +130,7 @@ program define primus_vintage, rclass
 				local _b = r(N)
 				return local newy_`module'=(`_b'==0)
 			
-				if (`_b'!=0){
+				if (`_b'!=0) {
 					levelsof verm, local(newm) clean
 					levelsof newa, local(newa) clean
 					

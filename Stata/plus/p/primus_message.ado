@@ -9,6 +9,7 @@ program define primus_message
 	
 	//Plugin errors
 	if `error'==403 noi dis "{err}Not an authorized user to download (when the plugin user is not the same as input UPI in method 0 and plugin user is not a super admin)"
+	if `error'==403 noi dis "{err}new error"
 	if `error'==601 noi dis "{err}Internet bad URL format"
 	if `error'==602 noi dis "{err}Internet authentication canceled"
 	if `error'==603 noi dis "{err}Internet connectivity failure"
@@ -49,8 +50,12 @@ program define primus_message
 	if `error'==842 noi dis "{err}No records available in this Transaction"	
 	if `error'==851 noi dis "{err}Operation failed: Transaction is in Pending status"	
 	if `error'==852 noi dis "{err}Operation failed: Transaction is in REJECTED status"	
+	*if `error'==853 noi dis "{err}The filename must be of the format, SurveyId_Module"	
+	if `error'==854 noi dis "{err}The Process module and SurveyID_module not matched"	
 	if `error'==853 noi dis "{err}Please provide a valid Decision"	
-	if `error'==855 noi dis "{err}Transaction is in DRAFT mode"	
+	*if `error'==855 noi dis "{err}Transaction is in DRAFT mode"	
+	if `error'==855 noi dis "{err}Operation failed: The transaction should be uploaded with the XML file"	
 	if `error'==856 noi dis "{err}Transaction is in COMPLETE mode"
 	if `error'==857 noi dis "{err}Transaction is in REJECT mode"	
+	if `error'==858 noi dis "{err}Transaction is in pending mode, so it can't be confirmed."	
 end

@@ -68,10 +68,10 @@ program primus_query, rclass
 		if _rc==0 {
 			noi dis as text in yellow "PRIMUS transaction ID list is loaded in Stata. Browse and see."
 			global errcodep = 0
-			gen double date_modified1 = clock(date_modified, "MDYhms")
+			gen double date_modified1 = clock(updateddate, "MDYhms")
 			format %tc date_modified1
-			drop date_modified
-			ren date_modified1 date_modified
+			drop updateddate
+			ren date_modified1 updateddate
 		}
 		else {
 			noi dis as error "Unknow error - Unable to load the downloaded meta datafile."	
