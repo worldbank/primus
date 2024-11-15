@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.0.0  11nov2017}{...}
+{* *! version 1.1.0  11nov2024}{...}
 {viewerdialog primus "dialog primus"}{...}
 {vieweralsosee "[PRIMUS] intro" "mansection PRIMUS intro"}{...}
 {vieweralsosee "" "--"}{...}
@@ -13,11 +13,11 @@
 {title:Title}
 
 {hline}
-help for {cmd:primus} {right:World Bank/Poverty and Equity GP - GSG1}
+help for {cmd:primus} {right:World Bank/Poverty and Equity GP - D4G}
 {hline}
 
 {p2colset 5 19 21 2}{...}
-{p2col :{manlink PRIMUS intro} {hline 2}}Introduction to primus - PRIMUS packages{p_end}
+{p2col :{manlink PRIMUS intro} {hline 2}}Introduction to primus - PRIMUS package{p_end}
 {p2colreset}{...}
 
 {p 8 9 9}
@@ -29,31 +29,39 @@ help for {cmd:primus} {right:World Bank/Poverty and Equity GP - GSG1}
 {marker description}{...}
 {title:Description}
 
-    {c TLC}{hline 62}{c TRC}
-    {c |} The {cmd:primus} suite of commands deals approval of poverty {col 68}{c |}
-    {c |} indicators based on the microdata submitted to PRIMUS. {col 68}{c |}
-    {c |} Currently, there are three approval roles in the system. {col 68}{c |}
-    {c |} They are Regional team, DECDG, and Povcalnet {col 68}{c |}
-    {c |}{col 68}{c |}
-    {c |} To become familiar with {cmd:primus} as quickly as possible,{col 68}{c |}
-    {c |} you can do the following{col 68}{c |}
-    {c |}{col 68}{c |}
+    {c TLC}{hline 82}{c TRC}
+    {c |} The {cmd:primus} suite of commands is used for upload data into PRIMUS transactions {col 88}{c |} 
+    {c |} and files in approved transactions will be deposited in Datalibweb. {col 88}{c |}
+    {c |} There are different ways to put the files into Datalibweb through PRIMUS {col 88}{c |}
+    {c |} processes, and each process has its own approval workflow  {col 88}{c |}
+    {c |} (number of approvers, regional and global). {col 88}{c |}
+    {c |} Like Datalibweb, users need to register Datalibweb's token every 30 days. {col 88}{c |}    
+    {c |}{col 88}{c |}
+    {c |} To become familiar with {cmd:primus} as quickly as possible,{col 88}{c |}
+    {c |} you can do the following{col 88}{c |}
+    {c |}{col 88}{c |}
     {c |}    1.  See {it:{help sae##example:A simple example}} under {...}
-{bf:{help sae##remarks:Remarks}} below.{col 68}{c |}
-    {c |}{col 68}{c |}
-    {c |}    2.  To upload the data into PRIMUS, see{col 68}{c |}
-    {c |}        {bf:{help primus_upload:[PRIMUS] primus upload}}{col 68}{c |}    
-    {c |}{col 68}{c |}
-    {c |}    3.  To query the status of PRIMUS transaction, see{col 68}{c |}
-    {c |}        {bf:{help primus_query:[PRIMUS] primus query}}{col 68}{c |}
-    {c |}{col 68}{c |}
-    {c |}    4.  To download the indicators submitted into PRIMUS, see{col 68}{c |}
-    {c |}        {bf:{help primus_download:[PRIMUS] primus download}}{col 68}{c |}
-    {c |}{col 68}{c |}
-    {c |}    5.  To act (confirm, reject, or approved) transactions in {col 68}{c |}
-    {c |}        in PRIMUS, see{col 68}{c |}
-    {c |}        {bf:{help primus_action:[PRIMUS] primus action}}{col 68}{c |}
-    {c BLC}{hline 62}{c BRC}
+{bf:{help sae##remarks:Remarks}} below.{col 88}{c |}
+    {c |}{col 88}{c |}
+    {c |}    2.  To register the token before running PRIMUS codes, see{col 88}{c |}
+    {c |}        {cmd:primus register, token()} where token is copied from Datalibweb website{col 88}{c |}    
+    {c |}{col 88}{c |}
+    {c |}    3.  To upload the files and data files into PRIMUS, see{col 88}{c |}
+    {c |}        {bf:{help primus_upload:[PRIMUS] primus upload}}{col 88}{c |}    
+    {c |}{col 88}{c |}
+    {c |}    4.  To query metadata of processes and status of PRIMUS transaction, see{col 88}{c |}
+    {c |}        {bf:{help primus_query:[PRIMUS] primus query}}{col 88}{c |}
+    {c |}{col 88}{c |}
+    {c |}    5.  To download metadata, XML, the indicators submitted into PRIMUS, see{col 88}{c |}
+    {c |}        {bf:{help primus_download:[PRIMUS] primus download}}{col 88}{c |}
+    {c |}{col 88}{c |}
+    {c |}    6.  To act (confirm, reject, or approve) transactions in {col 88}{c |}
+    {c |}        in PRIMUS, see{col 88}{c |}
+    {c |}        {bf:{help primus_action:[PRIMUS] primus action}}{col 88}{c |}
+    {c |}{col 88}{c |}
+    {c |}    7.  To see and upload current user-assignment and countries in PRIMUS {col 88}{c |}
+    {c |}        {bf:{help primus_roles:[PRIMUS] primus roles}}{col 88}{c |}
+    {c BLC}{hline 82}{c BRC}
 
 
 {marker remarks}{...}

@@ -1,6 +1,6 @@
 {smcl}
 {* *! version 0.0.1 19Jan2018}{...}
-{cmd:help primus_upload}
+{cmd:help primus_gmdupload}
 {hline}
 
 {title:Title}
