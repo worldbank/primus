@@ -1,4 +1,4 @@
-*! primus_gmd_upload.ado 0.2.1  12Sep2014
+*! primus_gmdupload.ado 0.2.1  12Sep2014
 *! Copyright (C) World Bank 2017-2024 
 
 * This program is free software: you can redistribute it and/or modify
@@ -65,18 +65,31 @@ program define primus_gmdupload, rclass
 		*===============================================================================
 			// 01:Error checks	
 		*===============================================================================	
+		if ("`vermast'"~="" & "`veralt'"=="") | ("`vermast'"=="" & "`veralt'"~="") {
+			noi dis "Both master and adaptation versions are needed."
+			error 198
+		}
+		
 		//Split fullname
 		if ("`fullsurveyid'"!="") {
-			local fullsurveyid = trim(upper("`fullsurveyid'"))		
-			tokenize `fullsurveyid', parse("_")
-			local countrycode  = "`1'"
-			local year         = "`3'"
-			local survey       = "`5"
-			local verm 		   = subinstr("`7'","V","",.)
-			local vera         = subinstr("`11'","V","",.)
-			local collection   = "`15'"
-			if ("`17'"!="") local module	= "`17'"			
-			local fullfullsurveyidname 
+			local  n_underscore = length("`fullsurveyid'") - length(subinstr("`fullsurveyid'", "_", "", .))
+			if (`n_underscore'==7|`n_underscore'==8) {
+				noi dis "Master and adaptation versions from the `fullsurveyid' will be used."
+				local fullsurveyid = trim(upper("`fullsurveyid'"))		
+				tokenize `fullsurveyid', parse("_")
+				local countrycode  = "`1'"
+				local year         = "`3'"
+				local survey       = "`5'"
+				local vermast 	   = subinstr("`7'","V","",.)
+				local veralt       = subinstr("`11'","V","",.)
+				local collection   = "`15'"
+				if ("`17'"!="") local module	= "`17'"			
+				local fullfullsurveyidname 
+			}
+			else {
+				noi dis "The format of full SurveyID (`fullsurveyid') is not correct. It should be Code_YYYY_SurveyAcronym_VXX_M_VYY_A_GMD or Code_YYYY_SurveyAcronym_VXX_M_VYY_A_GMD_Module"
+				error 198
+			}
 		}
 		
 		//Upper case all necessary inputs
@@ -91,8 +104,7 @@ program define primus_gmdupload, rclass
 			cap isid `hhid'
 			if (_rc!=0) {
 				noi dis as error "Data is not unique at `hhid' level, please revise"
-				error 459
-				exit
+				error `=_rc'								
 			}
 		}
 		else {
@@ -116,23 +128,20 @@ program define primus_gmdupload, rclass
 			local collection = trim(upper("`collection'"))
 			if "`collection'"!="GMD" {
 				noi dis as error "`collection' is not a valid collection, only the GMD collection is accepted"
-				error 198
-				exit
+				error 198				
 			}
 		}
 		
 		//Specify module 
 		if ("`module'"=="") {
 			noi dis as error "You must specify a module, such as ALL, GPWG, BIN, GROUP, ASPIRE, L, HIST"
-			error 198
-			exit
+			error 198			
 		}
 		local modulelist ALL GPWG BIN GROUP ASPIRE HIST L
 		local _modch: list modulelist & module
 		if ("`_modch'"=="") {
 			noi dis as error "You have specified an unrecognized module. Available modules are: ALL GPWG BIN GROUP ASPIRE HIST L"
-			error 198
-			exit
+			error 198			
 		}
 		
 		*===============================================================================
@@ -194,8 +203,7 @@ program define primus_gmdupload, rclass
 
 		if (`_aok'==0) {
 			noi dis as error "The survey name provided does not exist in the DLW system. Please make sure the survey name is in DLW, either in raw data or regional harmonzied collections. Available survey names are `svnamestocheck'."
-			error 3699
-			exit
+			error 3699			
 		}
 		
 		//Welfare type
@@ -298,6 +306,8 @@ program define primus_gmdupload, rclass
 			primus_vintage, country(`countrycode') year(`year') svy(`survey') module(`module')
 			if ("`vermast'"=="") local vermast = "`r(newm)'"
 			local veralt  = "`r(newa)'" 
+			local _gpwg_a = r(gpwg_a)
+			local _gpwg_m = r(gpwg_m)
 			/*
 			if (upper("`module'")=="GPWG" | upper("`module'")=="ALL") {
 				local nm = lower("`module'")
@@ -345,6 +355,8 @@ program define primus_gmdupload, rclass
 				local _v_a = subinstr("`_v_a'", ".","",.)
 				local _v_m = subinstr("`_v_m'", "V","",.)
 				local _v_m = subinstr("`_v_m'", ".","",.)
+				local _gpwg_a = r(gpwg_a)
+				local _gpwg_m = r(gpwg_m)
 			restore
 			
 			if ("`_v_a'"=="`veralt'" & "`_v_m'"=="`vermast'" & "`newyear'"!="1") {
@@ -456,8 +468,8 @@ program define primus_gmdupload, rclass
 			save `cpi_'
 		}
 		else {
-			dis as error "Unable to load CPI ICP database"
-			error 1
+			noi dis as error "Unable to load CPI ICP database"
+			error `=_rc'
 			exit
 		}
 		
@@ -516,11 +528,7 @@ program define primus_gmdupload, rclass
 		
 		//prep path/filename to be uploaded
 		tempfile upload1
-		*local path "`upload1'"
-		*local lastslash = strrpos("`path'", "\") 	
-		* Extract everything up to the last backslash (if you want the directory part)
-		*local dirpath = substr("`path'", 1, `lastslash')
-
+		
 		use `dataoutfin', clear	
 		char _dta[filename] `filename'
 		char _dta[tranxid] `prmTransID'
@@ -536,32 +544,36 @@ program define primus_gmdupload, rclass
 		else { //when it is ALL
 			//upload ALL
 			primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filename'") tranxid(`prmTransID')
-			return list
+			noi return list
 			rm "`dirpath'\\`filename'"
 			
-			//Split, save the file, and upload
-			use `dataoutfin', clear		
-			cap ren gaul_adm1 gaul_adm1_code
-			cap ren gaul_adm2 gaul_adm2_code
-			cap ren gaul_adm3 gaul_adm3_code	
-			local check age male urban hsize welfarenom welfareother welfareothertype welfaredef welfshprosperity gaul_adm1_code gaul_adm2_code gaul_adm3_code gaul_adm1 gaul_adm2 gaul_adm3 subnatid subnatid1 subnatid2 subnatid3 subnatidsurvey
-			local oklist
-			foreach var of local check {
-				cap des `var'
-				if _rc==0 local oklist "`oklist' `var'"
+			*local _gpwg_a = r(gpwg_a)
+			*local _gpwg_m = r(gpwg_m)
+			if ("`overwrite'"=="") {
+				//Split, save the file, and upload
+				use `dataoutfin', clear		
+				cap ren gaul_adm1 gaul_adm1_code
+				cap ren gaul_adm2 gaul_adm2_code
+				cap ren gaul_adm3 gaul_adm3_code	
+				local check age male urban hsize welfarenom welfareother welfareothertype welfaredef welfshprosperity gaul_adm1_code gaul_adm2_code gaul_adm3_code gaul_adm1 gaul_adm2 gaul_adm3 subnatid subnatid1 subnatid2 subnatid3 subnatidsurvey
+				local oklist
+				foreach var of local check {
+					cap des `var'
+					if _rc==0 local oklist "`oklist' `var'"
+				}
+				cap drop weight
+				cap des weight_p
+				if _rc==0 ren weight_p weight
+				keep code year hhid pid welfare welfare* weight `oklist' 					
+				char _dta[filename] `filenameGPWG'
+				char _dta[tranxid] `prmTransID'
+				
+				saveold "`dirpath'\\`filenameGPWG'", replace
+				
+				primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filenameGPWG'") tranxid(`prmTransID')
+				noi return list
+				rm "`dirpath'\\`filenameGPWG'"
 			}
-			cap drop weight
-			cap des weight_p
-			if _rc==0 ren weight_p weight
-			keep code year hhid pid welfare welfare* weight `oklist' 					
-			char _dta[filename] `filenameGPWG'
-			char _dta[tranxid] `prmTransID'
-			
-			saveold "`dirpath'\\`filenameGPWG'", replace
-			
-			primus upload, processid(${processid}) surveyid(`foldername') type(harmonized) folderpath(${folderpath}) infile("`dirpath'\\`filenameGPWG'") tranxid(`prmTransID')
-			return list
-			rm "`dirpath'\\`filenameGPWG'"
 		}
 	*} //qui
 end

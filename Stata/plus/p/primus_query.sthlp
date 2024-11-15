@@ -13,8 +13,8 @@
 {title:Syntax}
 
 {p 8 17 2}
-{cmdab:primus query}
-{cmd:,[} 
+{cmdab:primus query, }
+{cmd:,{opt proc:ess(numeric)} [} 
 {opt coun:try(string)} {opt year(string)} {opt r:egion(string)} {opt overalls:tatus(string)} {opt pending:with(string)} {opt tran:xid(string)}]
 	
 {synoptline}
@@ -35,24 +35,23 @@
 {synopt:{opth year(string)}} year of the data; can accept more than one year separated by comma{p_end}
 {synopt:{opth r:egion(string)}} region of the data and transaction. Options are "ECA", "EAP", "MNA", "LAC", "SSA", or "SAR"{p_end}
 {synopt:{opth overalls:tatus(string)}} The overall status of the transaction. It can be "APPROVED", "PENDING", or "REJECTED", and takes only one value{p_end}
-{synopt:{opth pending:with(string)}} Find the pending status from approvers, and only take one value. Option is "DECDG", "FINALIZER", "POVCALNET", "REGIONAL", or "UPLOADER"{p_end}
-{synopt:{opth tran:xid(string)}} Transaction IDs, can accept more than one transaction separated by comma{p_end}
+{synopt:{opth pending:with(string)}} Find the pending status from approvers, and only take one value. Option is different across processes and the name/label is defined by the regional/systen admins"{p_end}
 
 {marker examples}{...}
 {title:Examples}
 
-{phang}{cmd:. primus query, overallstatus(PENDING)} {p_end}
+{phang}{cmd:. primus query, process(6) overallstatus(PENDING)} {p_end}
 {pstd}
-Query the status of the PRIMUS transactions with the overall status as PENDING. 
+Query the status of the PRIMUS transactions with the overall status as PENDING in the process 6. 
 
-{phang}{cmd:. primus query, country(ALB,ARM) overalls(pending)} {p_end}
+{phang}{cmd:. primus query, proc(6) country(ALB,ARM) overalls(pending)} {p_end}
 {pstd}
 Query the status of the PRIMUS transactions for ALB and ARM with the overall status as PENDING. 
 
-{phang}{cmd:. primus query, region(ECA) overalls(pending)} {p_end}
+{phang}{cmd:. primus query, process(6) region(ECA) overalls(pending)} {p_end}
 {pstd}
 Query the status of all PRIMUS transactions from the ECA region with the overall status as PENDING. 
 
-{phang}{cmd:. primus query, region(ECA) pending(povcalnet)} {p_end}
+{phang}{cmd:. primus query, process(6) region(ECA) pending(povcalnet)} {p_end}
 {pstd}
 Query the status of all PRIMUS transactions from the ECA region with the overall status as PENDING with Povcalnet. 

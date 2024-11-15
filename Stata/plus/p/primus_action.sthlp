@@ -34,7 +34,6 @@
 {synopt:{opth tran:xid(string)}} Transaction ID, accept ONLY one transaction ID{p_end}
 {synopt:{opth d:ecision(string)}} Decision to be act on the Transaction ID. Uploader can either "CONFIRM" or "REJECT"; and Approvers can "APPROVE" or "REJECT"{p_end}
 {synopt:{opth c:omments(string)}} Comments must be for REJECT. For CONFIRM or APPROVE, system can use username as the comments.{p_end}
-{synopt:{opth index:id(string)}} It is the calculation index provided by the primus download for each transaction. It indicates the choices based on the combination of several input such as Welfare Set, Method, PPP value, CPI value, Group as indicated in the PRIMUS view. The default value is 1 if it is missing.{p_end}
 
 {marker examples}{...}
 {title:Examples}
@@ -47,7 +46,7 @@ User put an "CONFIRM" action on the transaction, this is the first step of the P
 {pstd}
 User put an "APPROVE" action on the transaction. This is only possible when Uploader had confirmed or no one from the approver's role have act upon the transaction. Transaction cannot be approved/rejected more than one or change the action after it goes through. Users without approval role for the country in transaction will not be able to do so and get an error.
 
-{phang}{cmd:. primus action, tranxid(007-000327173-MNAPOV-DJI-24674) proc(7) decision(REJECT) comments(issues with the data) {p_end}
+{phang}{cmd:. primus action, tranxid(007-000327173-MNAPOV-DJI-24674) proc(7) decision(REJECT) comments(issues with the data)} {p_end}
 {pstd}
 User put an "REJECT" action on the transaction. In this case, it could be the rejection from the uploader role or from the approver role, depending on the stage of the transaction ID. Comments are required for any rejections.
 

@@ -166,7 +166,7 @@ program primus_upload, rclass
 			}
 		} //outtxt
 	} // primusrc
-	else {
+	else {		
 		primus_message, error(`=_rc')
 		global errcodep `=_rc'			
 		error 1						

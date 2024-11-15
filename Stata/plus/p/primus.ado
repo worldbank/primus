@@ -23,7 +23,7 @@ program primus, rclass
 	local l = strlen("`subcmd'")
 	
 	global PRIMUS_VERSION 2
-	global webserver 3
+	global webserver 4
 	global errcodep 0
 	
 	if ("`subcmd'"=="upload") { //upload relelated tasks

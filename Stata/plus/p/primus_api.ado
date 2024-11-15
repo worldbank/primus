@@ -50,7 +50,7 @@ program define _primus_api_v2, rclass
 	local user = subinstr("`user'","C","",.)
 	local user = subinstr("`user'","S","",.)
 	local user = subinstr("`user'","D","",.)
-			
+	local prmErrMsg		
 	//load register first it is asked via dlw_api
 	if ("`option'"=="8") { //register token
 		if "`token'"~="" {			
@@ -142,7 +142,8 @@ program define _primus_api_v2, rclass
 			c_local prmTransId "`prmTransId'"			
 		}
 		else {
-			primus_message, error(`=_rc')
+			noi dis "{err}`primusrc': `prmErrMsg'"
+			if "`prmErrMsg'"=="" primus_message, error(`=_rc')
 			global errcodep `=_rc'			
 			error 1
 		}

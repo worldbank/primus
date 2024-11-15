@@ -136,7 +136,8 @@ program primus_download, rclass
 		
 		primus_api, option(7) query("`RequestKey'") outfile(`primusout')
 		if `primusrc'==0 {
-			cap insheet using "`primusout'", clear
+			*cap insheet using "`primusout'", clear
+			cap import delimit using "`primusout'", clear varn(1) case(lower)
 			if _rc==0 {
 				noi dis as text in yellow "PRIMUS survnames are loaded in Stata. Browse and see."
 			}

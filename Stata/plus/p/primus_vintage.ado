@@ -67,6 +67,7 @@ program define primus_vintage, rclass
 			gen newa1 = real(vera)+1
 			gen newm1 = real(verm)
 			gen newa = "0"+string(newa1) if length(string(newa1))==1
+			replace newa = string(newa1) if length(string(newa1))==2
 	
 			//Latest GPWG
 			levelsof verm if mod=="GPWG" & vera!="WRK", local(verm) clean
