@@ -152,6 +152,8 @@ program define primus_vintage, rclass
 			return local all_a = "01"
 			return local gpwg_m = "01"
 			return local gpwg_a = "01"
+			return local maxm = "01"
+			return local maxa = "01"				
 			return local gpwg_wm= ""
 			if ("`max'"!="") {
 				return local maxm = "01"
