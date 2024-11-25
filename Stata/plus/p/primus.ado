@@ -29,6 +29,9 @@ program primus, rclass
 	if ("`subcmd'"=="upload") { //upload relelated tasks
 		primus_upload `0'
 	}
+	else if ("`subcmd'"=="gmdupload") { //query PRIMUS data
+		primus_gmdupload `0'
+    }
 	else if ("`subcmd'"=="query") { //query PRIMUS data
 		primus_query `0'
     }
