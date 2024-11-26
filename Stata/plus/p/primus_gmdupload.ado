@@ -44,10 +44,17 @@ program define primus_gmdupload, rclass
 		   AUTOversion                          ///
 		   OVERwrite							///
 		   hhlev(integer 0)                     ///		                        
-		   default ///
+		   default PROCessid(string) ///
         ]
 	
-	global processid 8
+	if "`processid'"=="" {
+		if ${webserver}==3 global processid 8
+		if ${webserver}==4 global processid 16	
+	}
+	else {
+		global processid `processid'
+	}
+	
 	global folderpath Data\Harmonized
 	
 	/*
