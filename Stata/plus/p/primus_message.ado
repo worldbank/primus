@@ -74,5 +74,6 @@ program define primus_message
 	if `error'==861 noi dis "{err}861 Operation failed: Uploader can't approve a transaction"	
 	if `error'==870 noi dis "{err}870 The same file already exists for the same SurveyID"	
 	if `error'==871 noi dis "{err}871 Please provide a valid Decision"	
+	if `error'==874 noi dis "{err}874 Please upload files"	
 	if `error'==2222 noi dis "{err}2222 The specified input server parameter is invalid or incorrect."
 end
