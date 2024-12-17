@@ -159,10 +159,8 @@ program primus_download, rclass
 		local parm_trans tranx
 		if "`indicator'"~="" local option 2a
 		if "`filelist'"~="" local option 2b
-		if "`xml'"~="" {
-			local option 9
-			local parm_trans TransactionId
-		}	
+		if "`xml'"~="" local option 9
+			
 		if `= wordcount("`tranxid'")' > 1 {
 			if "`xml'"~="" {
 				noi dis as error "One transaction ID is needed with xml() option."
