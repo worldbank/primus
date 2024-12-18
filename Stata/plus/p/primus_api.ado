@@ -60,8 +60,9 @@ program define _primus_api_v2, rclass
 				noi dis as text "PRIMUS/Datalibweb token is registered. The token is valid for 30 days as indicated in the datalibweb website."
 			}
 			else {
+				noi dis "{err}`primusrc': `prmErrMsg'"
 				noi dis as error "PRIMUS/Datalibweb token is invalid or expired. Please visit the datalibweb website to renew the token."
-				noi dis as text "Use this: primus_api, option(8) token(your token here)"
+				noi dis as text "Use this: primus register, token(your token here)"
 				global errcodep `=_rc'				
 				error 1
 				*exit `= _rc'

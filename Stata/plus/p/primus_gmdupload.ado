@@ -20,12 +20,11 @@ program define primus_gmdupload, rclass
 	syntax [if] [in] ,                          ///
         Countrycode(string) Year(numlist >1900 int max=1)         ///                  
 		WELFare(varname) welfaretype(string)                     /// 
-        WELFSHprosperity(varname)  welfshprtype(string)          ///
-		weight(varname) weighttype(string)                       ///
-		HSize(varname) hhid(varname)                            ///
+		weight(varname) weighttype(string) hhid(varname)        ///		                             
 		MODule(string) SURvey(string)  pfwid(string)        	///
-        [                                       ///		   
-		   CPIPERiod(string)                    ///           
+        [                                                       ///		   
+		   WELFSHprosperity(varname)  welfshprtype(string)      ///
+		   CPIPERiod(string) HSize(varname)                   ///           
 		   pid(varname)							///		                
 		   POVWeight(varname) spdef(varname)    ///                          
            welfarenom(varname)  welfaredef(varname) welfareother(varname) welfareothertype(string)              ///                            
