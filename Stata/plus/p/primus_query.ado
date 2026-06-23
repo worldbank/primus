@@ -27,7 +27,7 @@ program primus_query, rclass
 	*global errcodep = 0
 	//housekeeping
 	local regionlist `" "ECA", "EAP", "MNA", "LAC", "SSA", "SAR" "'
-	local overallstatuslist `" "COMPLETE", "PENDING", "REJECT", "DELETED", "DRAFT" "'
+	local overallstatuslist `" "APPROVED", "COMPLETE", "PENDING", "REJECT", "DELETED", "DRAFT" "'
 	local pendingwithlist `" "DEC", "FINALIZER", "REGIONAL", "UPLOADER" "'
 		
 	local RequestKey processid=`processid'&server=${webserver}
